@@ -1,0 +1,20 @@
+library(readxl)
+data=read_excel("C:\\Users\\Administrator\\Desktop\\BD\\存活曲线.xlsx",sheet="图2")##导入csv数据
+str(data)
+head(data)
+plot(data$长度,data$A,type="b",ylab="Precent  surviviing",xlab="Length   (mm)",lty=1)
+par(new=TRUE)  # 是否叠加新图形，没叠加一次运行一次该命令
+plot(data$长度,data$A,type="b",ylab="Precent  surviviing",xlab="Length   (mm)",lty=6)
+text(12, 52, "A")
+par(new=TRUE)  # 是否叠加新图形，没叠加一次运行一次该命令
+plot(data$长度,data$B,type="b",ylab="Precent  surviviing",xlab="Length   (mm)",lty=10)
+text(12, 60, "B")
+par(new=TRUE)  # 是否叠加新图形，没叠加一次运行一次该命令
+plot(data$长度,data$C,type="b",ylab="Precent  surviviing",xlab="Length   (mm)",lty=14)
+text(12, 34, "C")
+par(new=TRUE)  # 是否叠加新图形，没叠加一次运行一次该命令
+plot(data$长度,data$D,type="b",ylab="Precent  surviviing",xlab="Length   (mm)",lty=18)
+text(12, 24, "D")
+par(new=TRUE)  # 是否叠加新图形，没叠加一次运行一次该命令
+plot(data$长度,data$T,type="b",ylab="Precent  surviviing",xlab="Length   (mm)",lty=22)
+text(12, 42, "T")

@@ -1,0 +1,68 @@
+library(readxl)
+
+##数据读取及删除缺失值
+birds <- read_excel('C:\\Users\\dell\\Desktop\\北大R语言\\Ecology_birds_and_pteryosaur(1).xlsx')
+birds[1:5, 1:4]#查看前5行,前1-4列数据
+dim(birds)#查看数据维度
+for(i in 4 : dim(birds)[2]){
+birds[, i] <- as.numeric(unlist(birds[, i]))
+}#将4-13列变量类型改为数值型
+birds <- birds[complete.cases(birds[,c(1:9, 11, 12)]), ]#删除有缺失值的行
+dim(birds)
+pterosaurs <- read_excel('C:\\Users\\dell\\Desktop\\北大R语言\\Ecology_birds_and_pteryosaur(2).xlsx')
+pterosaurs[1:5, 1:4]#查看前5行,前1-4列数据
+dim(pterosaurs)#查看数据维度
+for(i in 4 : dim(pterosaurs)[2]){
+pterosaurs[, i] <- as.numeric(unlist(pterosaurs[, i]))
+}#将4-16列变量类型改为数值型
+pterosaurs <- pterosaurs[complete.cases(pterosaurs), ]#删除有缺失值的行
+dim(pterosaurs)
+
+##数据预处理及数据合并
+new_birds <- data.frame() ; new_birds[1:nrow(birds), 'type'] <- 'birds'
+new_birds[, 'Femur'] <- birds$Femur ; new_birds[, 'Mandible length'] <- birds[, 'Mandible length']
+new_birds[, 'mandible depth'] <- birds[, 'Mandible depth']
+new_birds[, 'brachial'] <- birds$Humerus#brachial = humerus
+new_birds[, 'antebrachial'] <- birds[, 'Radius/Ulna']#antebrachial = ulna
+new_birds[, 'distal wing'] <- birds[, 'Manus (CMC + Ph1D2 + Ph2D2)'] + 
+10^(0.987 * log(birds[, 'Manus (CMC + Ph1D2 + Ph2D2)'], 10) + 0.344)
+#distal wing = carpometacarpus + digit II + mean primary feather length.其中carpometacarpus + digit II = manus
+#log10(mean primary feather length) = 0.987(log10(manus)) + 0.344
+new_birds[, 'tibia length'] <- birds$Tibiotarsus#tibia length = Tibiotarsus
+new_birds[, 'metatarsal length'] <- birds$Tarsometatarsus#metatarsal length = Tarsometatarsus
+head(new_birds)
+new_pterosaurs <- data.frame() ; new_pterosaurs[1:nrow(pterosaurs), 'type'] <- 'new_pterosaurs'
+new_pterosaurs[, 'Femur'] <- pterosaurs$Femur ; new_pterosaurs[, 'Mandible length'] <- pterosaurs[, 'Mandible length']
+new_pterosaurs[, 'mandible depth'] <- pterosaurs[, 'Mandible depth']
+new_pterosaurs[, 'brachial'] <- pterosaurs$Humerus#brachial = humerus
+new_pterosaurs[, 'antebrachial'] <- pterosaurs[, 'Radius/ulna'] + pterosaurs[, 'Wing metacarpal']
+#antebrachial = ulna + metacarpal IV.其中metacarpal IV = Wing metacarpal
+new_pterosaurs[, 'distal wing'] <- pterosaurs[, 'Wing phalanx 1'] + pterosaurs[, 'Wing phalanx 2'] +
+pterosaurs[, 'Wing phalanx 3'] + pterosaurs[, 'Wing phalanx 4']
+#distal wing = digit IV.其中sum of the phalanges of digit IV
+new_pterosaurs[, 'tibia length'] <- pterosaurs$Tibia#tibia length = Tibia
+new_pterosaurs[, 'metatarsal length'] <- pterosaurs[, 'Metatarsal (longest)']#metatarsal length = Metatarsal (longest)
+head(new_pterosaurs)
+data <- rbind(new_birds, new_pterosaurs)
+dim(data)
+##主成分分析
+data.pr <- princomp(data[, -1], cor = T)
+summary(data.pr, loadings = T)
+pca_data <- predict(data.pr)
+plot(x = pca_data[1:26,1], y = pca_data[1:26,2], xlab = 'PC1', ylab = 'PC2', col = 'blue',
+pch = 2, xlim = c(-2, 2), ylim = c(-2,2))
+par(new=TRUE)
+plot(x = pca_data[27:45,1], y = pca_data[27:45,2], xlab = 'PC1', ylab = 'PC2', col = 'red',
+pch = 1, xlim = c(-2, 2), ylim = c(-2,2))
+legend('topleft', legend = c('Mesozoic brids','pterosaurs'), col = c('blue', 'red'), pch = c(2, 1), bty = "n") 
+
+##置信椭圆
+library(car)
+dataEllipse(x = pca_data[1:26,1], y = pca_data[1:26,2], levels=0.95, xlab = 'PC1', ylab = 'PC2', col = 'blue',
+pch = 2, xlim = c(-3, 3), ylim = c(-3,2), center.pch = FALSE)
+par(new=TRUE)
+dataEllipse(x = pca_data[27:45,1], y = pca_data[27:45,2], levels=0.65, xlab = 'PC1', ylab = 'PC2', col = 'red',
+pch = 1, xlim = c(-3, 3), ylim = c(-3,2), center.pch = FALSE)
+legend('topleft', legend = c('Mesozoic brids','pterosaurs'), col = c('blue', 'red'), pch = c(2, 1), bty = "n") 
+
+

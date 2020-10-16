@@ -1,0 +1,171 @@
+---
+title: "生物多样性"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+<font size=4 face="微软雅黑">
+
+&emsp;&emsp;温度对海洋纬向多样性梯度的影响日益得到很好的记录。然而，多样性、纬度和温度之间定量关系的时间稳定性在很大程度上是未知的。
+
+
+&emsp;&emsp;尽管多样性-纬度关系是动态的，但在过去300万年里多样性-温度关系非常稳定。这些结果表明，随着物种的活动范围对生态时间尺度上的温度变化做出反应，物种多样性正在迅速重组，未来人类引起的温度变化对生态的影响可能部分可以从化石和古气候学记录中预测出来。
+
+# 数据准备
+***
+
+<font size=4 face="微软雅黑">
+
+
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+setwd("C:\\Users\\Lenovo\\Desktop\\data_t")
+data1 <- read.table("forams-LGM.txt",sep = '\t',header = TRUE)
+data2 <- read.table("forams-LIG.txt",sep = '\t',header = TRUE)
+data3 <- read.table("forams-Md.txt",sep = '\t',header = TRUE)
+data4 <- read.table("forams-Plio.txt",sep = '\t',header =TRUE)
+head(data1)
+```
+
+&emsp;&emsp;对海洋和经纬度数据进行读取，包含lat、long、 cold.sst、 warm.sst、 NumSp 、E200，对其在多样性-纬度关系上进行可视化分析。
+
+# 绘制图形
+***
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+
+par(mfrow=c(1,2))
+#绘制第一个散点和曲线
+x1=sort(data1$lon); y1=data1$E200   #x的值必须排序
+x2=sort(data1$NumSp)
+plot(x1,x2,xlab="纬度",ylab="物种多样性数量");    #做散点图
+lines(lowess(x1,x2),lwd=3,col=1);    #利用lowess做回归曲线
+#增加第二个散点和曲线
+par(new=TRUE)
+x1=sort(data2$lon); y1=data2$E200   #x的值必须排序
+x2=sort(data2$NumSp)
+plot(x1,x2,yaxt="n",xaxt="n",xlab="纬度",ylab="物种多样性数量");    #做散点图
+lines(lowess(x1,x2),lwd=3,col=2,lty=4);    #利用lowess做回归曲线
+par(new=TRUE)
+# 增加第三个散点和曲线
+x1=sort(data3$lon); y1=data3$E200   #x的值必须排序
+x2=sort(data3$NumSp)
+plot(x1,x2,yaxt="n",xaxt="n",xlab="纬度",ylab="物种多样性数量",main="纬向物种多样性梯度");    #做散点图，其中yaxt="n",xaxt="n",是为了不显示坐标轴的标签。
+lines(lowess(x1,x2),lwd=3,col=3,lty=4);    #利用lowess做回归曲线
+
+par(new=TRUE)
+#增加第四个图形
+x1=sort(data4$lon); y1=data4$E200   #x的值必须排序
+x2=sort(data4$NumSp)
+plot(x1,x2,yaxt="n",xaxt="n",xlab="纬度",ylab="物种多样性数量");    #做散点图，其中yaxt="n",xaxt="n",是为了不显示坐标轴的标签。
+lines(lowess(x1,x2),lwd=3,col=4,lty=4);    #利用lowess做回归曲线
+
+
+legend("bottomright",legend=c("LGM","LIG","Modem","Pliocence") ,col=c("black","red","green","blue"),bty="n",             #图例颜色
+,lty=1,lwd=2,merge = F)  
+
+#绘制第一个散点和曲线
+x1=sort(data1$cold.sst); y1=data1$E200   #x的值必须排序
+x2=sort(data1$NumSp)
+plot(x1,x2,xlab="海面温度",ylab="");    #做散点图
+lines(lowess(x1,x2),lwd=3,col=1,lty=1,pch=0);    #利用lowess做回归曲线
+#增加第二个散点和曲线
+par(new=TRUE)
+x1=sort(data2$cold.sst); y1=data2$E200   #x的值必须排序
+x2=sort(data2$NumSp)
+plot(x1,x2,yaxt="n",xaxt="n",xlab="海面温度",ylab="");    #做散点图
+lines(lowess(x1,x2),lwd=3,col=2,lty=2,pch=1);    #利用lowess做回归曲线
+par(new=TRUE)
+# 增加第三个散点和曲线
+x1=sort(data3$cold.sst); y1=data3$E200   #x的值必须排序
+x2=sort(data3$NumSp)
+plot(x1,x2,yaxt="n",xaxt="n",xlab="海面温度",ylab="");    #做散点图，其中yaxt="n",xaxt="n",是为了不显示坐标轴的标签。
+lines(lowess(x1,x2),lwd=3,col=3,lty=3,pch=2);    #利用lowess做回归曲线
+
+#增加第四个图形
+par(new=TRUE)
+x1=sort(data4$cold.sst); y1=data3$E200   #x的值必须排序
+x2=sort(data4$NumSp)
+plot(x1,x2,yaxt="n",xaxt="n",xlab="海面温度",ylab="",main="温度(冷海洋表面温度)-多样性关系");    #做散点图，其中yaxt="n",xaxt="n",是为了不显示坐标轴的标签。
+lines(lowess(x1,x2),lwd=3,col=4,lty=5,pch=3);    #利用lowess做回归曲线
+
+
+## 以下是添加图例标签
+#legend("bottomright",legend=c("LGM","LIG","Modem","Pliocence") ,col=c("black","red","green","blue")             #图例颜色
+#,lty=1,lwd=2)  
+
+legend("bottomright",c("LGM","LIG","Modem","Pliocence"), col=c("black","red","green","blue"),
+text.col = "green4", lty = c(1, 2, 3,5), pch = c(0, 1, 2,3),bty="n",
+merge = F) 
+
+```
+
+&emsp;&emsp;北大西洋浮游有孔虫的物种多样性模式。左边图1是纬度物种多样性梯度。右边图2是温度(冷海洋表面温度)-多样性关系。橙色:现代。蓝色:LGM(18000年前)。红色: LIG(120,000年前)。绿色: 上新世中期(约330 - 300万年前)。线是每个时间断面的局部加权回归曲线。由于样本量小，没有显示LIG局部加权回归曲线。利用浮游有孔虫传递函数重建了LGM、LIG和上新世冷海洋表面温度。
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+####绘制第一个图形
+layout(matrix(c(1,2,3,4),2,2,byrow = TRUE))
+library(maps)
+range(data2$long)##查看long的取值范围
+range(data2$lat)##查看lat的取值范围,此范围和plot函数的坐标轴对应
+map("world", fill = TRUE,ylim = c(-60,90 ), xlim=c(-90,55),mar = c(2, 2, 1, 1))
+par(new=TRUE)  # 是否叠加新图形，没叠加一次运行一次该命令
+library(MASS)
+contour(kde2d(data3$long,data3$lat), col = 'red', drawlabel=F)
+legend("topleft","Modern",col="black",
+       text.col = "red", lty = c(1, 2, 3,5), pch = c(0, 1, 2,3),bty="n",
+        merge = F)
+ 
+####绘制第二个图形
+map("world", fill = TRUE,ylim = c(-60,90 ), xlim=c(-90,55),mar = c(2, 2, 1, 1))
+par(new=TRUE)  # 是否叠加新图形，没叠加一次运行一次该命令
+library(MASS)
+contour(kde2d(data1$long,data1$lat), col = 'red', drawlabel=F)
+legend("topleft","LGM",col="black",
+       text.col = "red", lty = c(1, 2, 3,5), pch = c(0, 1, 2,3),bty="n",
+        merge = F) 
+
+####绘制第三个图形
+map("world", fill = TRUE,ylim = c(-60,90 ), xlim=c(-90,55),mar = c(2, 2, 1, 1))
+par(new=TRUE)  # 是否叠加新图形，没叠加一次运行一次该命令 
+plot(data2$long,data2$lat,ylim = c(-60,90 ),xlim=c(-90,55),ylab="");    #做散点图
+legend("topleft","LIG",col="black",
+       text.col = "red", lty = c(1, 2, 3,5), pch = c(0, 1, 2,3),bty="n",
+        merge = F) 
+
+
+####绘制第四个图形
+map("world", fill = TRUE,ylim = c(-60,90 ), xlim=c(-90,55),mar = c(2, 2, 1, 1))
+par(new=TRUE)  # 是否叠加新图形，没叠加一次运行一次该命令
+plot(data4$long,data4$lat,ylim = c(-60,90 ),xlim=c(-90,55),ylab="");    #做散点图
+legend("topleft","Piocene",col="black",
+       text.col = "red", lty = c(1, 2, 3,5), pch = c(0, 1, 2,3),bty="n",
+        merge = F) 
+```
+
+&emsp;&emsp;生物多样性在海洋中的密集分布情况如上所示，在海洋周围环绕性分布。
+
+# 本章汇总
+***
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+data=read_excel("C:\\Users\\Lenovo\\Desktop\\data_t\\生物多样性文献.xlsx")
+kable(head(data ,8))
+```
+
+# 参考文献
+***
+</font>
+&emsp;&emsp;[1] 薛薇. 基于R的统计分析与数据挖掘[M]. 中国人民大学出版社, 2014.
+
+&emsp;&emsp;[2]WinstonChang. R数据可视化手册[M]. 人民邮电出版社, 2014.
+
+&emsp;&emsp;[3]http://dx.doi.org/10.5061/dryad.dc139

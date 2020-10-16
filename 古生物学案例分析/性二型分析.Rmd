@@ -1,0 +1,210 @@
+---
+title: "性二型分析"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+<font size=4 face="微软雅黑">
+
+&emsp;&emsp;性二型是指在雌雄异体的有性生物中，反映结构和功能变化的某些变量，例如形态特征、行为模式等，在两种性别之间出现固有和明显的差别，使得人们能够以此为根据判断一个个体性别的现象。
+
+&emsp;&emsp;在古生物学中，对于化石性二型的研究有助于帮助古生物学者了解性演化的过程，继而更好地理解贯穿地质历史时期的性选择在生物演化方面所起到的至关重要的作用。然而除了一些保存及其精美的特异埋藏化石外，大多数生物化石既缺乏反映性征的明确证据，如缺少软组织性器官的保存，又不能直接观察到像交配或者繁育等带有鲜明性别差异的性行为，因此在化石研究中，尤其是对于已经灭绝的分类单元或者保存程度较差、数量较少的大化石，个体性别的识别是非常困难的。
+
+
+&emsp;&emsp;性二型普遍被认为是通过性选择作用演化而来的。通常，介形虫在成虫壳体的形态上表现出性二型的现象，然而以往的研究并没有涉及这种形态性二型（sexual shape dimorphism） 在演化时间尺度上的变化，也没有研究形态性二型与选择压力和幼年个体形态之间的关系。本研究识别出采集自古新世沉积物中的介形类化石Krithe dolichodeira性二型形态特征随时间的变化规律，以讨论性选择作用与性二型之间的相互作用关系。
+
+<div align=center>
+![ ](C:\\Users\\Lenovo\\Desktop\\tdldata\\性二型分析思路.png)
+
+</div>
+
+
+<html>
+<body>
+<p style="color:red">&emsp;&emsp;注意：</p>
+<p style="color:blue">&emsp;&emsp;以下的所有数据中，命名的字段变量中不能存在特殊的符号，例如空格、中文括号、$、#、中文横杆等都需要对数据的表头先进行处理，后续才能对数据进行分析。</p>
+</body>
+</html>
+
+
+# 形态测量与和密度分析
+
+&emsp;&emsp;高斯混合模型就是用高斯概率密度函数（正态分布曲线）精确地量化事物，它是一个将事物分解为若干的基于高斯概率密度函数（正态分布曲线）形成的模型。运用高斯混合模型的前提假设是同一发育阶段的个体呈现正态分布。如下所示：
+
+
+```{r,warning=FALSE}
+library(RColorBrewer)#加载调色版包
+library(readxl)
+library(basicTrendline)
+par(mfrow = c(2, 1), mar = c(4, 4, 0, 0))
+data <- read_excel("C:\\Users\\Lenovo\\Desktop\\tdldata\\SupplementaryTable02_1129_2016.xlsx")
+data$ln_L_H<-log((data$Length_μm)*(data$Height_μm),2.71) # 两变量之积后取底数为e对数
+plot(data$Age_Ma,data$ln_L_H,mgp=c(1,0,0))
+text(56.8,12.8,"A",col = "red")
+mean(data$ln_L_H)
+
+h=rep(12.314:12.314,each=263)
+lines(data$Age_Ma,h,col="gray", lty=3,lwd=2)
+hist(data$ln_L_H,,xaxt="n",yaxt="n",xlab="",ylab="",col="lightgrey",main="")
+par(new=T)
+plot(density(data$ln_L_H),main="")
+text(10.9,1.2,"B",col = "red")
+```
+
+
+&emsp;&emsp;图A表示壳体面积随时间变化的散点图，虚线代表ln（LxH）=12.32
+图B为 Krithe dolichodeira成年个体壳体面积的频率分布直方图，曲线是通过高斯混合模型（GMM）估计的密度曲线，利用贝叶斯信息准则（BIC）最低值可得出能将成年个体分为两个亚组分，被视为Krithe dolichodeira的形态变异（morphological variation），分别是morphotype B和morphotype S。为进一步对形态变异进行分析，进行贝叶斯的准则分析。
+
+
+# 形态变异与贝叶斯准则分析
+
+&emsp;&emsp;贝叶斯信息准则是主观贝叶斯派归纳理论的重要组成部分，就是在不完全情报下，对部分未知的状态用主观概率估计，然后用贝叶斯公式对发生概率进行修正，最后再利用期望值和修正概率做出最优决策。贝叶斯信息准则分为E步骤和M步骤，也就是采用期望值最大化（Expectation Maximization：EM），EM算法就是这样，假设我们估计知道A和B两个参数，在开始状态下二者都是未知的，并且知道了A的信息就可以得到B的信息，反过来知道了B也就得到了A。可以考虑首先赋予A某种初值，以此得到B的估计值，然后从B的当前值出发，重新估计A的取值，这个过程一直持续到收敛为止。如下所示：
+```{r}
+par(mfrow = c(3, 2), mar = c(4, 4, 0, 0))
+data1 <- data[data$Length_μm>600&data$Height_μm>300, ]
+plot(data1$Length_μm,data1$Height_μm,xlab="L(um)",ylab="H(mm)",ylim=c(300,500),xlim=c(600,1000))
+text(600,490,"A",col = "red")
+data1$ln_L_H <- data1$Height_μm/data1$Length_μm# 两变量之积后取第底为10的对数
+hist(data1$ln_L_H,xaxt="n",yaxt="n",xlab="",ylab="",col="lightgrey",main="")
+par(new=T)
+plot(density(data1$ln_L_H),main="")
+text(0.35,12,"B",col = "red")
+###p2
+data2 <- data[data$Length_μm>550&data$Height_μm>250, ]
+plot(data2$Length_μm,data2$Height_μm,xlab="L(um)",ylab="H(mm)",ylim=c(250,350),xlim=c(550,750))
+text(550,335,"C",col = "red")
+data2$ln_L_H <- data2$Height_μm/data2$Length_μm# 两变量之积后取第数为10的对数
+hist(data2$ln_L_H,xaxt="n",yaxt="n",xlab="",ylab="",col="lightgrey",main="")
+par(new=T)
+plot(density(data2$ln_L_H),main="")
+text(0.35,11,"D",col = "red")
+
+###p3
+data3 <- data[data$Length_μm>300&data$Height_μm>150, ]
+plot(data3$Length_μm,data3$Height_μm,xlab="L(um)",ylab="H(mm)",ylim=c(150,450),xlim=c(300,800))
+text(300,430,"E",col = "red")
+data3$ln_L_H <- data3$Height_μm/data3$Length_μm# 
+hist(data3$ln_L_H,xaxt="n",yaxt="n",xlab="",ylab="",col="lightgrey",main="")
+par(new=T)
+plot(density(data3$ln_L_H),main="")
+text(0.35,8,"F",col = "red")
+```
+
+&emsp;&emsp;图A表示A下的L和H的散点图，
+
+&emsp;&emsp;图B表示B下的H/L频率分布直方图并根据高斯混合模型呈现为双峰式；
+
+&emsp;&emsp;图C表示S的L和H的散点图，
+
+&emsp;&emsp;图D表示 S的H/L频率分布直方图并根据高斯混合模型呈现为三峰式；
+
+&emsp;&emsp;图E表示幼年个体L和H的散点图，幼年个体的H/L频率分布直方图，根据高斯混合模型呈现为单峰式。该研究主要关注形态变异参数 B，并将在其中识别出的两个组分分别视为雄性和雌性；
+
+
+&emsp;&emsp;图F表示幼年个体H/L为单峰式，说明这种二型现象发生在成体阶段。
+
+# 异速生长速率
+
+```{r}
+par(mfrow = c(3, 2), mar = c(4, 4, 0, 0))
+library(readxl)
+data=read_excel("C:\\Users\\Lenovo\\Desktop\\tdldata\\Supplementary_Table04.xlsx")
+str(data)
+data=as.data.frame(data)
+plot(data$Female_mean_H_L,data$Male_mean_H_L)
+text(0.4845,0.427,"A",col = "red")
+par(new=TRUE)
+trendline(data$Female_mean_H_L,data$Male_mean_H_L,model="line2P",Pvalue.corrected = FALSE,
+          linecolor = "black", lty = 1, lwd = 1, show.equation = FALSE,
+          show.Rpvalue = FALSE, Rname = 1, Pname = 0, xname = "x", yname = "y",
+          yhat = FALSE, summary = FALSE, ePos.x = NULL, ePos.y = NULL,
+          text.col = "white", eDigit = 5, eSize = 1, CI.fill = TRUE,
+          CI.level = 0.95, CI.color = "white", CI.alpha = 1, CI.lty = 2,
+          CI.lwd = 2, las = 1, xlab = NULL, ylab = NULL,xaxt="n",yaxt="n")
+text(0.486,0.424,"r = 0.14")
+r=cor(data$Proportion_females,data$Female_mean_H_L)
+print(r)
+plot(data$Proportion_females,data$Female_mean_H_L)
+text(0.45,0.497,"B",col = "red")
+par(new=TRUE)
+trendline(data$Proportion_females,data$Female_mean_H_L,model="line2P",Pvalue.corrected = FALSE,
+          linecolor = "black", lty = 1, lwd = 1, show.equation = FALSE,
+          show.Rpvalue = FALSE, Rname = 1, Pname = 0, xname = "x", yname = "y",
+          yhat = FALSE, summary = FALSE, ePos.x = NULL, ePos.y = NULL,
+          text.col = "white", eDigit = 5, eSize = 1, CI.fill = TRUE,
+          CI.level = 0.95, CI.color = "white", CI.alpha = 1, CI.lty = 2,
+          CI.lwd = 2, las = 2, xlab = NULL, ylab = NULL,xaxt="n",yaxt="n")
+text(0.52,0.493,"r = 0.301")
+
+r=cor(data$Proportion_females,data$Male_mean_H_L)
+print(r)
+plot(data$Proportion_females,data$Female_mean_H_L,ylab="")
+text(0.45,0.498,"C",col = "red")
+par(new=TRUE)
+trendline(data$Proportion_females,data$Male_mean_H_L,model="line2P",Pvalue.corrected = FALSE,
+          linecolor = "black", lty = 1, lwd = 1, show.equation = FALSE,
+          show.Rpvalue = FALSE, Rname = 1, Pname = 0, xname = "x", yname = "y",
+          yhat = FALSE, summary = FALSE, ePos.x = NULL, ePos.y = NULL,
+          text.col = "white", eDigit = 5, eSize = 1, CI.fill = TRUE,
+          CI.level = 0.95, CI.color = "white", CI.alpha = 1, CI.lty = 2,
+          CI.lwd = 2, las = 2, xlab = NULL, ylab = NULL,xaxt="n",yaxt="n")
+text(0.50,0.42,"r = 0.143")
+
+r=cor(data$Juvenile_mean_H_L,data$Female_mean_H_L)
+print(r)
+plot(data$Juvenile_mean_H_L,data$Female_mean_H_L)
+text(0.545,0.495,"D",col = "red")
+par(new=TRUE)
+trendline(data$Juvenile_mean_H_L,data$Female_mean_H_L,model="line2P",Pvalue.corrected = FALSE,
+          linecolor = "black", lty = 1, lwd = 1, show.equation = FALSE,
+          show.Rpvalue = FALSE, Rname = 1, Pname = 0, xname = "x", yname = "y",
+          yhat = FALSE, summary = FALSE, ePos.x = NULL, ePos.y = NULL,
+          text.col = "white", eDigit = 5, eSize = 1, CI.fill = TRUE,
+          CI.level = 0.95, CI.color = "white", CI.alpha = 1, CI.lty = 2,
+          CI.lwd = 2, las = 2, xlab = NULL, ylab = NULL,xaxt="n",yaxt="n")
+text(0.52,0.495,"r = 0.143")
+r=cor(data$Juvenile_mean_H_L,data$Male_mean_H_L)
+print(r)
+plot(data$Juvenile_mean_H_L,data$Male_mean_H_L)
+text(0.545,0.418,"E",col = "red")
+par(new=TRUE)
+trendline(data$Juvenile_mean_H_L,data$Male_mean_H_L,model="line2P",Pvalue.corrected = FALSE,
+          linecolor = "black", lty = 1, lwd = 1, show.equation = FALSE,
+          show.Rpvalue = FALSE, Rname = 1, Pname = 0, xname = "x", yname = "y",
+          yhat = FALSE, summary = FALSE, ePos.x = NULL, ePos.y = NULL,
+          text.col = "white", eDigit = 5, eSize = 1, CI.fill = TRUE,
+          CI.level = 0.95, CI.color = "white", CI.alpha = 1, CI.lty = 2,
+          CI.lwd = 2, las = 2, xlab = NULL, ylab = NULL,xaxt="n",yaxt="n")
+text(0.52,0.4225,"r = 0.40")
+
+```
+
+&emsp;&emsp;图A表示雌性H/L平均值相对于雄性H/L平均值的投图；
+
+&emsp;&emsp;图B表示雌性比例相对于雌性H/L平均值的投图；
+
+&emsp;&emsp;图C表示雌性比例相对于雄性H/L平均值的投图，
+
+&emsp;&emsp;图D表示幼年H/L平均值相对于雌性H/L平均值的投图；
+
+&emsp;&emsp;图E表示幼年H/L平均值相对于雄性H/L平均值的投图。雌性H/L与幼年个体有显著相关关系而雄性没有，说明异速生长的速率或约束效果在两性之间并不相同。
+
+
+&emsp;&emsp;<b>结论：</b>(1)Krithe dolichodeira的形态性二型在古新世期间一直存在，但即使作用于雄性的选择压力发生改变，这种现象也并没有发生演化，研究结果并不支持作用于两性之间的选择压力会驱使形态性二型发生演化的假说；（2）异速生长斜率和截距在百万年尺度上非常稳定，说明古新世介形类壳体形态的演化被这种稳定的异速生长所限制。
+
+# 本章汇总
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+
+data=read_excel("C:\\Users\\Lenovo\\Desktop\\tdldata\\packages.xlsx")
+kable(head(data ,4))
+```

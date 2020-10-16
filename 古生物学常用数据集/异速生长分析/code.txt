@@ -1,0 +1,82 @@
+library(MASS) #加载MASS包,用于fisher判别
+library(readxl) #加载包readxl包,用于读取excel数据
+library(ggplot2) #加载ggplot2包,用于绘制直方图
+library(car) #加载car包,用于绘制置信椭圆
+
+#读取数据
+data <- read_excel('C:\\Users\\dell\\Desktop\\北大R语言\\2-1 异速生长分析\\Allometry_keichousaurus.xlsx')
+str(data)
+#数据清洗
+for (i in 2:15){
+data <- data[grepl('–', unlist(data[, i])) == FALSE, ] #找出第i列数据中含有'-'行,并剔除该行数据
+data[, i] <- as.numeric(unlist(data[, i])) #将第i列数据由字符串型改为数值型
+}
+names(data)[c(1,16:17)] <- c('Number.item', 'Gender.1', 'Gender.2') #变量重命名
+data$Gender.1 <- as.factor(data$Gender.1) #将变量Gender.1类型改为因子型
+str(data)
+#fisher判别
+ld <- lda(Gender.1~.-Number.item-Gender.1-Gender.2, data = data) #建立fisher模型
+pre <- predict(ld, data) #通过fisher模型对数据进行预测
+#分类直方图
+hisdata <- data.frame(sex = ifelse(pre$posterior[,2] > 0.5, 'M', 'F'), pre$x) #建立数据框,pre$posterior[,2]>0.5的性别为M否则性别为F
+ggplot(hisdata, aes(x = LD1, fill = sex)) +
+labs(title = '', x='Linear discriminant analysis 1', y='Frequency') +
+geom_histogram(position = 'identity', colour = 'black')
+
+#主成分分析
+data.pr <- princomp(data[, 2:15], cor = T) #对2-15列进行主成分分析
+summary(data.pr, loadings = T) 
+pca_data <- predict(data.pr)
+head(pca_data) 
+dataEllipse(x = pca_data[which(data$Gender.1 == 'F'), 1], y = pca_data[which(data$Gender.1 == 'F'), 2], levels = 0.95,
+xlab = 'Factor 1', ylab = 'Factor 2', col = 'blue', pch = 1, xlim = c(-10, 10), ylim = c(-2, 2), center.pch = FALSE) 
+par(new=TRUE)
+dataEllipse(x = pca_data[which(data$Gender.1 != 'F'), 1], y = pca_data[which(data$Gender.1 != 'F'), 2], levels = 0.70,
+xlab = '', ylab = '', col = 'red', pch = 4, xlim = c(-10, 10), ylim = c(-2, 2), center.pch = FALSE)
+legend('topleft', legend = c('female', 'male'), col = c('blue', 'red'), pch = c(1, 4), bty = "n") #添加图例
+
+#协方差分析（ANCOVA）
+names(data)[4] <- 's.v.l' #变量's-v.l'名改为's.v.l' 
+data_f <- data[which(data$Gender.1 == 'F'), ] #筛选出性别为F的数据 
+data_m <- data[which(data$Gender.1 == 'M'), ] #筛选出性别为M的数据
+par(mfrow = c(2, 2), mar = c(4, 4, 1, 1))
+#图A
+plot(x = data_f$s.v.l, y = data_f$hm.l, xlim = c(0, 250), ylim = c(0, 30), pch = 1,
+col = 'blue', xlab = 'Snout-vent length (mm)' , ylab = 'Humerus length (mm)')
+abline(lm(data_f$hm.l~data_f$s.v.l), col = 'blue', lwd = 2, h = , v = ) #添加趋势线
+par(new = TRUE)
+plot(x = data_m$s.v.l, y = data_m$hm.l, xlim = c(0, 250), ylim = c(0, 30), pch = 4,
+col = 'red', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n')
+abline(lm(data_m$hm.l~data_m$s.v.l), col = 'red', lwd = 2) #添加趋势线
+legend(0, 28, legend = c('female', 'male'), col = c('blue', 'red'), pch = c(1, 4), bty = "n") #添加图例
+text(15, 29, 'A', cex = 1.5, font = 2) #左上角添加'A'
+#图B
+plot(x = data_f$s.v.l, y = data_f$fm.l, xlim = c(0, 250), ylim = c(0, 25), pch = 1,
+col = 'blue', xlab = 'Snout-vent length (mm)' , ylab = 'Femur length (mm)')
+abline(lm(data_f$fm.l~data_f$s.v.l), col = 'blue', lwd = 2, h = , v = ) #添加趋势线
+par(new = TRUE)
+plot(x = data_m$s.v.l, y = data_m$fm.l, xlim = c(0, 250), ylim = c(0, 25), pch = 4,
+col = 'red', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n')
+abline(lm(data_m$fm.l~data_m$s.v.l), col = 'red', lwd = 2) #添加趋势线
+text(15, 24, 'B', cex = 1.5, font = 2) #左上角添加'B'
+#图C
+plot(x = data_f$fm.l, y = data_f$hm.l, xlim = c(0, 25), ylim = c(0, 30), pch = 1,
+col = 'blue', xlab = 'Femur length (mm)' , ylab = 'Humerus length (mm)')
+abline(lm(data_f$hm.l~data_f$fm.l), col = 'blue', lwd = 2, h = , v = ) #添加趋势线
+par(new = TRUE)
+plot(x = data_m$fm.l, y = data_m$hm.l, xlim = c(0, 25), ylim = c(0, 30), pch = 4,
+col = 'red', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n')
+abline(lm(data_m$hm.l~data_m$fm.l), col = 'red', lwd = 2) #添加趋势线
+text(1, 29, 'C', cex = 1.5, font = 2) #左上角添加'C'
+#图D
+plot(x = data_f$hm.m, y = data_f$hm.d, xlim = c(0, 5), ylim = c(0, 9), pch = 1,
+col = 'blue', xlab = 'Humerus mid-shaft width (mm)' , ylab = 'Humerus distal width (mm)')
+abline(lm(data_f$hm.d~data_f$hm.m), col = 'blue', lwd = 2, h = , v = ) #添加趋势线
+par(new = TRUE)
+plot(x = data_m$hm.m, y = data_m$hm.d, xlim = c(0, 5), ylim = c(0, 9), pch = 4,
+col = 'red', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n')
+abline(lm(data_m$hm.d~data_m$hm.m), col = 'red', lwd = 2) #添加趋势线
+text(0.2, 8.5, 'D', cex = 1.5, font = 2) #左上角添加'D'
+
+
+

@@ -1,0 +1,196 @@
+---
+title: "生态表形"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+  
+  <font size=4 face="微软雅黑">
+  
+# 研究概述
+
+&emsp;&emsp;在白垩纪末期和翼龙灭绝之前，鸟类与翼龙有过同时存在，这两个种群共存了大约90百万年。
+
+&emsp;&emsp;一种观点认为，鸟类和翼龙在当时存在生态上竞争，由于鸟类与小型翼龙竞争，导致整个白垩纪的小型翼龙的逐渐体型增大，翼龙的多样性下降，支持这一观点的证据包括晚侏罗纪和白垩纪沉积物中鸟类和翼龙的共存，从侏罗纪末期开始翼龙的体型最小值和最大值逐渐增大，饮食相似。有趣的是，它们的共存也被用来暗示生态分离。
+
+&emsp;&emsp;另一种观点认为，通过对鸟类和翼龙的骨骼形态比较研究发现，鸟类与翼龙在形态空间几乎没有重叠。这些研究比较了构成翅膀和腿的同源骨骼元素的比例，并得出结论，由于形态空间的分离，缺乏生态竞争的证据。
+
+&emsp;&emsp;对于鸟类和翼龙是互相抢夺生活领地，还是在生活领地中共存，在科研中存在分歧。通过对鸟类和翼龙的个体相关数据进行主成分分析，发现鸟类和翼龙似乎在整个共存时期都采用了独特的生态策略，而不是一个群体取代另一个群体。
+
+# 翅膀对比
+
+&emsp;&emsp;翼龙和鸟类的翅膀是以非常不同的方式构建的，反映了它们长期独立的进化历史。翼龙有一个非常细长的第四个骨，它与手臂的其余部分一起支撑着一个向下延伸到后肢的膜。在鸟类中，手部的骨头被缩小并融合形成心皮，羽毛形成机翼表面以及机翼前缘的大部分。因此，初级羽毛大幅增加了功能性鸟类翅膀长度高达100%；相比之下，翼龙翅膀的整个长度只能从机翼骨骼测量。因此，这些研究基本上比较了翼龙的全翅和半翅。
+
+<div align=center>
+![ ](C:\\Users\\dell\\Desktop\\北大R语言\\翅膀.png)
+</div>
+
+# 数据读取及删除缺失值
+
+## 加载包
+```{r}
+library(readxl)
+library(car)
+```
+
+## 读取鸟类数据及删除缺失值
+```{r,warning=FALSE}
+birds <- read_excel('C:\\Users\\dell\\Desktop\\北大R语言\\Ecology_birds_and_pteryosaur(1).xlsx')
+str(birds)#查看数据
+for(i in 4 : dim(birds)[2]){
+birds[, i] <- as.numeric(unlist(birds[, i]))
+}#将4-13列变量类型改为数值型
+birds01 <- is.na(birds)#将缺失值记为TURE, 否则是FALSE
+head(birds01)
+apply(birds01, 2, sum) / dim(birds)[1]#查看各列缺失值比例
+birds <- birds[, -10]#删除列Average primary feather
+birds <- birds[complete.cases(birds), ]#删除有缺失值的行
+dim(birds)
+```
+
+&emsp;&emsp;通过str函数可以发现鸟类数据集共有175条数据，13个变量，所有变量的类型都为字符串型，部分数据还存在缺失值。通过apply函数查看每个变量缺失数据所占比例，发现变量Average primary feather的缺失值比例达到86.28%，所以删除变量Average primary feather。将存在缺失值的数据删除后，总共保留了26条数据，12个变量。
+
+## 读取翼龙数据及删除缺失
+```{r,warning=FALSE}
+pterosaurs <- read_excel('C:\\Users\\dell\\Desktop\\北大R语言\\Ecology_birds_and_pteryosaur(2).xlsx')
+str(pterosaurs)#查看数据
+for(i in 4 : dim(pterosaurs)[2]){
+pterosaurs[, i] <- as.numeric(unlist(pterosaurs[, i]))
+}#将4-16列变量类型改为数值型
+pterosaurs <- pterosaurs[complete.cases(pterosaurs), ]#删除有缺失值的行
+dim(pterosaurs)
+```
+
+&emsp;&emsp;通过str函数可以发现翼龙数据集共有361条数据，16个变量，所有变量的类型都为字符串型，部分数据还存在缺失值。将存在缺失值的数据删除后，总共保留了19条数据，16个变量。
+
+# 数据预处理及数据合并
+
+&emsp;&emsp;本次分析选取鸟类和翼龙共有的8个类似变量。1.femur length(股骨长度;2.mandible length(下颌长度);3.mandible depth(下颌骨深度);4.brachial length(臂长);5.antebrachial length(前臂长度);6.distal wing length(远端翼长度);7.tibia length(胫长);8.metatarsal length(跖骨长度)。通过对原始数据进行预处理，我们将可以得到这8个变量。
+
+&emsp;&emsp;通过查阅相关资料可知，前肢分为3个功能单元：brachial(肱)、antebrachial(前臂)和distal wing(远端翼)。3个功能单元与原始数据关系是，翼龙的单位组成为brachial(肱)=humerus(肱骨)、antebrachial(前臂)=ulna(尺骨)+metacarpal IV (掌骨IV)和distal wing(远端翼)=digit IV(四个指骨)。鸟类的单位为brachial(肱)=humerus(肱骨)、antebrachial(前臂)=ulna(尺骨)和distal wing(远端翼)=carpometacarpus(腕足类)+digit II(第II位)+mean primary feather length(原始羽毛平均长度)
+
+## 鸟类数据预处理
+
+&emsp;&emsp;新建一个new_bids数据框，鸟类的8个变量与birds数据集中变量关系如下：
+
+&emsp;&emsp;1.新数据集中变量femur length = birds数据集中变量Femur
+
+&emsp;&emsp;2.新数据集中变量mandible length = birds数据集中变量Mandible length
+
+&emsp;&emsp;3.新数据集中变量mandible depth = birds数据集中变量Mandible depth
+
+&emsp;&emsp;4.新数据集中变量brachial length = birds数据集中变量Humerus
+
+&emsp;&emsp;5.新数据集中变量antebrachial length = birds数据集中变量Radius/Ulnar
+
+&emsp;&emsp;6.新数据集中变量distal wing length = birds数据集中变量Manus (CMC + Ph1D2 + Ph2D2) + 10^(0.987 * log10(Manus (CMC + Ph1D2 + Ph2D2) + 0.344)
+
+&emsp;&emsp;7.新数据集中变量tibia length = birds数据集中变量Tibiotarsus
+
+&emsp;&emsp;8.新数据集中变量metatarsal length = birds数据集中变量Tarsometatarsus
+
+```{r}
+new_birds <- data.frame() ; new_birds[1:nrow(birds), 'type'] <- 'birds'
+new_birds[, 'femur length'] <- birds$Femur ; new_birds[, 'mandible length'] <- birds[, 'Mandible length']
+new_birds[, 'mandible depth'] <- birds[, 'Mandible depth']
+new_birds[, 'brachial length'] <- birds$Humerus#brachial = humerus
+new_birds[, 'antebrachial length'] <- birds[, 'Radius/Ulna']#antebrachial = ulna
+new_birds[, 'distal wing length'] <- birds[, 'Manus (CMC + Ph1D2 + Ph2D2)'] + 
+10^(0.987 * log(birds[, 'Manus (CMC + Ph1D2 + Ph2D2)'], 10) + 0.344)
+#distal wing = carpometacarpus + digit II + mean primary feather length.其中carpometacarpus + digit II = manus;log10(mean primary feather length) = 0.987(log10(manus)) + 0.344
+new_birds[, 'tibia length'] <- birds$Tibiotarsus#tibia length = Tibiotarsus
+new_birds[, 'metatarsal length'] <- birds$Tarsometatarsus#metatarsal length = Tarsometatarsus
+head(new_birds)
+```
+
+## 翼龙数据预处理
+&emsp;&emsp;新建一个new_pterosaurs数据框，翼龙的8个变量与pterosaurs数据集中变量关系如下：
+
+&emsp;&emsp;1.新数据集中变量femur length = birds数据集中变量Femur
+
+&emsp;&emsp;2.新数据集中变量mandible length = birds数据集中变量Mandible length
+
+&emsp;&emsp;3.新数据集中变量mandible depth = birds数据集中变量Mandible depth
+
+&emsp;&emsp;4.新数据集中变量brachial length = birds数据集中变量Humerus
+
+&emsp;&emsp;5.新数据集中变量antebrachial length = birds数据集中变量Radius/Ulnar + Wing metacarpal
+
+&emsp;&emsp;6.新数据集中变量distal wing lengt = birds数据集中变量Wing phalanx 1 + Wing phalanx 2 + Wing phalanx 3 + Wing phalanx 4
+
+&emsp;&emsp;7.新数据集中变量tibia length = birds数据集中变量Tibia
+
+&emsp;&emsp;8.新数据集中变量metatarsal length = birds数据集中变量Metatarsal (longest)
+
+```{r}
+new_pterosaurs <- data.frame() ; new_pterosaurs[1:nrow(pterosaurs), 'type'] <- 'new_pterosaurs'
+new_pterosaurs[, 'femur length'] <- pterosaurs$Femur ; new_pterosaurs[, 'mandible length'] <- pterosaurs[, 'Mandible length']
+new_pterosaurs[, 'mandible depth'] <- pterosaurs[, 'Mandible depth']
+new_pterosaurs[, 'brachial length'] <- pterosaurs$Humerus#brachial = humerus
+new_pterosaurs[, 'antebrachial length'] <- pterosaurs[, 'Radius/ulna'] + pterosaurs[, 'Wing metacarpal']
+#antebrachial = ulna + metacarpal IV.其中metacarpal IV = Wing metacarpal
+new_pterosaurs[, 'distal wing length'] <- pterosaurs[, 'Wing phalanx 1'] + pterosaurs[, 'Wing phalanx 2'] +
+pterosaurs[, 'Wing phalanx 3'] + pterosaurs[, 'Wing phalanx 4']
+#distal wing = digit IV.其中sum of the phalanges of digit IV
+new_pterosaurs[, 'tibia length'] <- pterosaurs$Tibia#tibia length = Tibia
+new_pterosaurs[, 'metatarsal length'] <- pterosaurs[, 'Metatarsal (longest)']#metatarsal length = Metatarsal (longest)
+head(new_pterosaurs)
+```
+
+## 数据合并
+
+```{r}
+data <- rbind(new_birds, new_pterosaurs)
+dim(data)
+```
+
+&emsp;&emsp;合并后的数据共有45条，9个变量。
+
+# 主成分分析
+
+```{r}
+data.pr <- princomp(data[, -1], cor = T)
+summary(data.pr, loadings = T)
+```
+
+&emsp;&emsp;Proportion of Variance为方差贡献率;Cumulative Proportion为累计方差贡献率。可以看出第1主成分的方差贡献率是80.31%，第2主成分的方差贡献率是13.13%。第1主成分和第2主成分的累计方差贡献率为93.44%。Loadings中的矩阵分别对应主成分与各样本之间的系数关系。
+
+```{r}
+pca_data <- predict(data.pr)
+head(pca_data)
+```
+
+&emsp;&emsp;各样本的主成分的值
+
+```{r}
+dataEllipse(x = pca_data[1:26,1], y = pca_data[1:26,2], levels=0.95, xlab = 'PC1', ylab = 'PC2', col = 'blue',
+pch = 2, xlim = c(-3, 3), ylim = c(-3,2), center.pch = FALSE)
+par(new=TRUE)
+dataEllipse(x = pca_data[27:45,1], y = pca_data[27:45,2], levels=0.65, xlab = 'PC1', ylab = 'PC2', col = 'red',
+pch = 1, xlim = c(-3, 3), ylim = c(-3,2), center.pch = FALSE)
+legend('bottomright', legend = c('Mesozoic brids','pterosaurs'), col = c('blue', 'red'), pch = c(2, 1), bty = "n") 
+```
+
+&emsp;&emsp;从图中可以看出，鸟类与翼龙在第1主成分上没有明显差异性，而在第2主成分上有明显差异，在第2主成分中鸟类的主成分值都是小于翼龙的主成分值，这表明比起翼龙，鸟类的metatarsal length(跖骨长度)更长、brachial length(臂长)更长、mandible length(下颌长度)更短。
+
+# 本章汇总
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+data=read_excel("C:\\Users\\dell\\Desktop\\北大R语言\\生态表形参数.xlsx")
+kable(head(data ,9))
+```
+
+# 参考文献
+
+[1] Nicholas R. Chan.Morphospaces of functionally analogous traits show ecological separation between birds and pterosaurs[J].PROCEEDINGS OF THE ROYAL SOCIETY B 
+
+[2] https://www.docin.com/p-1935139116.html

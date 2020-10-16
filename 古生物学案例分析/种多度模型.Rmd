@@ -1,0 +1,240 @@
+﻿---
+title: "种多度模型"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+<font size=4 face="微软雅黑">
+
+&emsp;&emsp;多度关系是群落结构研究最基本的方面之一。Preston最早描述的物种“常见性和罕见性的分布”是群落中种-多度关系的一般特性。自从 Motomura开创性地提出一个几何序列模型用于描述这种特性后 ,生态学家已建立了许多拟合种 -多度关系的经验模型和理论模型 ,主要包括对数序列分布、对数正态分布等统计模型 ,几何序列模型、分割线段模型等生态位模型以及反映群落动态和环境制约作用的动态模型 ,还有其中一些模型的扩展模型。近年来 ,种 -多度关系研究领域已大大拓宽 ,如“群落”的内涵已延伸为“多物种集合”,物种“多度”的测度推广到“广义多度”。
+
+# 加载包和数据   
+
+```{r}
+library(RColorBrewer)#加载调色版包
+load("C:/Users/Lenovo/Desktop/data_project/countedcollections.Rdata")
+load("C:/Users/Lenovo/Desktop/data_project/invalid_PBDB.RData")
+load("C:/Users/Lenovo/Desktop/data_project/PBDB_Download_only.RData")
+load("C:/Users/Lenovo/Desktop/data_project/RevisedAnalysis_Genera.RData")
+load("C:/Users/Lenovo/Desktop/data_project/RevisedAnalysis_Species.RData")
+load("C:/Users/Lenovo/Desktop/data_project/Simus_run_220915.RData")
+```
+
+&emsp;&emsp;通过load()函数将.Rdata文件数据加载到R中。对三个主要恐龙分支——蜥脚类、鸟臀目和兽脚亚目物种多度的估计横坐标是地质年代
+
+
+
+# 绘制图形
+
+
+```{r}
+layout(matrix(1:4,4,1),widths = c(1,1,1,1),heights = c(1,.8,.8,1.1))  # #layout函数用于组合输出图，matrix是矩阵，widths和heights分别代表各列宽度和高度。(图形分栏)
+
+color.list <- brewer.pal(4,"Set1")  # 调用brewer.pal包里面的Set1调色板，从中取出4个颜色
+color.list2 <- color.list
+for (ii in 1:4){
+  color.list2[ii] = paste(color.list[ii],'44',sep=""); 
+ 
+}
+
+labs = c("(a)","(b)","(c)","(d)")
+doints = TRUE
+dolog =TRUE
+plbins = 1:27;
+for (ii in 1:4){
+  if (dolog==TRUE){
+    par(mar=c(0+(ii>3)*4,4,4-(ii>1)*4,2))
+
+    plot(midpoints[plbins],N_est_int[plbins,ii,1], type='l',col=color.list[ii],ylim=c(1-(0.9*(ii==4)),max(c(N_est_int[plbins,ii,]),na.rm=TRUE)*1.1),xlim = rev(range(midpoints[plbins])),xlab="",ylab="",log="y",yaxt='n',xaxt="n")
+    axis(2,at=c(1,10,100,1000))
+  } else {
+    plot(midpoints[plbins],N_est_int[plbins,ii,1], type='l',col=color.list[ii],ylim=c(.65,max(c(N_est_int[plbins,ii,]),na.rm=TRUE)*1.1),xlim = rev(range(midpoints[plbins])),xlab="",ylab="",yaxt='n')
+    axis(2,at=c(10,100,200,500,800,1000))
+    
+  }
+  
+  for (jj in plbins){
+    lines(rep(Bins[jj,1],2),c(.3,1e4),col="lightgray",lwd=1)
+  }
+  lines(rep(Bins[1,2],2),c(.3,1e4),col="lightgray",lwd=1)
+  for (jj in 1:6){
+    lines(rep(max(Bins[Bins[,6]==jj,1]),2),c(0.3,1e4),col="grey10",lwd=1)
+  }
+  lines(rep(min(Bins[Bins[,6]==6,2]),2),c(0.3,1e4),col="grey10",lwd=1)  # 绘制折线趋势图
+  
+  lines(midpoints[plbins],SpecRich_test[plbins,ii],type='o')
+  lines(midpoints[plbins],SpecRich_RT[plbins,ii],type='o',pch=6,lty=3)
+  
+  for (jj in 1:(length(plbins)-1)){
+    polygon(c(rev(midpoints[plbins[jj:(jj+1)]]),midpoints[plbins[jj:(jj+1)]]),c(rev(N_est_int[plbins[jj:(jj+1)],ii,2]),N_est_int[plbins[jj:(jj+1)],ii,3]),col=color.list2[ii],border=NA)
+    lines(midpoints[plbins[jj:(jj+1)]],N_est_int[plbins[jj:(jj+1)],ii,1],type='o',col=color.list[ii],lwd=1)
+    
+  }
+  
+  if (dospec==1){
+    mtext("Species richness",side=2,padj=-4,cex=.8)
+  } else {
+    mtext("Genus richness",side=2,padj=-4,cex=.8)
+  }
+  
+  
+  
+  if (ii==4){
+    mtext("Ma",side=1,padj=2.8,cex=.8)
+  } else {
+    axis(side=1,at=0)
+  }
+
+  mtext(Dinogroups[ii],side=2,adj=.6,padj=1.6,cex=0.8) # 添加标签
+
+  
+  figlims = par("usr"); 
+  
+}
+
+axis(1,at=c(240,200,150,100,66))
+
+color.list.eps = c("grey70","grey90")
+yminz = par("usr")[3]
+for (ii in 1:27){
+  rect(Bins[ii,1],.3,Bins[ii,2],1,lwd=1,col = color.list.eps[Bins[ii,6] %% 2])
+}
+
+for (ii in 1:6){
+  rect(max(Bins[Bins[,6]==ii,1]),10.^yminz,min(Bins[Bins[,6]==ii,2]),.3,lwd=1,col = color.list.eps[ii %% 2])
+}
+
+for (ii in 1:6){
+  text((min(Bins[Bins[,6]==ii,2])+max(Bins[Bins[,6]==ii,1]))/2,.15,epoch.names[ii],cex=.8)
+}
+
+for (ii in 1:27){
+  text(midpoints[ii],.5,substr(interval.names[ii],1,3),cex=.7,srt=90)
+}
+
+```
+
+&emsp;&emsp;蜥脚类、鸟臀目和兽脚亚目物种多度随着地质年代变化而发生变化。
+
+
+```{r}
+
+color.list <- brewer.pal(4,"Set1")
+
+color.list2 <- color.list
+for (ii in 1:4){
+  color.list2[ii] = paste(color.list[ii],'44',sep=""); 
+}
+patch.list = c(15,16,17,18)
+lines.list = c(1,2,3,4)
+
+par(mfrow=c(2,1),cex=0.5)
+plbins = 1:27;
+if (docis==FALSE){
+  ylimits = c(0,max(p_int_median[,,1],na.rm=TRUE))
+} else {
+  ylimits = c(0,max(p_int_median,na.rm=TRUE))
+}
+xlimits = rev(range(midpoints[plbins]))
+par(mar=(c(0,4.1,4,2)))
+ii=1
+plot(midpoints[plbins],p_int_median[plbins,ii,1], type='o',col=color.list[1],ylim=ylimits,xlim = rev(range(midpoints[plbins])),xlab="Ma",ylab=expression(paste(lambda, " - sampling rate")),xaxt="n",pch=patch.list[ii],lty=lines.list[ii])
+abline(h = 0,col="black",lwd=1)
+for (ii in 1:4){
+  lines(midpoints[plbins],p_int_median[plbins,ii,1], type='o',col=color.list[ii],ylim=ylimits,xlim = rev(range(midpoints[plbins])),xlab="Ma",pch=patch.list[ii],lty=lines.list[ii])
+  if (docis==TRUE){
+    for (ss in 2:27){
+      polygon(c(rev(midpoints[plbins[(ss-1):ss]]),midpoints[plbins[(ss-1):ss]]),c(rev(p_int_median[plbins[(ss-1):ss],ii,2]),p_int_median[plbins[(ss-1):ss],ii,3]),col=color.list2[ii],border=NA)
+    }
+  }
+}
+for (jj in plbins){
+  lines(rep(Bins[jj,1],2),c(-.2,ylimits[2]*1.2),col="lightgray",lwd=1)
+}
+lines(rep(Bins[1,2],2),c(-.2,ylimits[2]*1.2),col="lightgray",lwd=1)
+for (jj in 1:6){
+  lines(rep(max(Bins[Bins[,6]==jj,1]),2),c(-.2,ylimits[2]*1.2),col="grey10",lwd=1)
+}
+lines(rep(min(Bins[Bins[,6]==6,2]),2),c(-.2,ylimits[2]*1.2),col="grey10",lwd=1)
+legend(135,ylimits[2],Dinogroups,lty=lines.list[1:4],pch=patch.list[1:4],col=color.list[1:4],bg="white")
+
+
+par(mar=(c(4,4,0,2)))
+ylimits = c(-.2,1)
+ii = 1;
+plot(midpoints[plbins],p_binos[plbins,1,1], type='o',col=color.list[1],ylim=ylimits,xlim = rev(range(midpoints[plbins])),yaxt="n",ylab = "Binomial sampling probability",xlab="Ma",pch=patch.list[ii],lty=lines.list[ii],xaxt="n",yaxt="n")
+
+axis(side=2,at=c(0.0,0.2,0.4,0.6,.8))
+axis(1,at=c(240,200,150,100,66)) #xtx)
+
+for (ii in 1:4){
+  lines(midpoints[plbins],p_binos[plbins,ii,1], type='o',col=color.list[ii],ylim=ylimits,xlim = rev(range(midpoints[plbins])),xlab="Ma",pch=patch.list[ii],lty=lines.list[ii])
+  if (docis==TRUE){
+    for (ss in 2:27){
+      polygon(c(rev(midpoints[plbins[(ss-1):ss]]),midpoints[plbins[(ss-1):ss]]),c(rev(p_binos[plbins[(ss-1):ss],ii,2]),p_binos[plbins[(ss-1):ss],ii,3]),col=color.list2[ii],border=NA)
+    }
+  }
+}
+for (jj in plbins){
+  lines(rep(Bins[jj,1],2),c(0,1.2),col="lightgray",lwd=1)
+}
+lines(rep(Bins[1,2],2),c(0,1.2),col="lightgray",lwd=1)
+for (jj in 1:6){
+  lines(rep(max(Bins[Bins[,6]==jj,1]),2),c(0,1.2),col="grey10",lwd=1)
+}
+lines(rep(min(Bins[Bins[,6]==6,2]),2),c(0,1.2),col="grey10",lwd=1)
+
+figlims = par("usr"); # 进行文件现限制
+
+
+
+for (ii in 1:27){
+
+  rect(Bins[ii,1],-.1,Bins[ii,2],0,lwd=1)
+}
+color.list.eps = c("grey70","grey90")
+for (ii in 1:27){
+  rect(Bins[ii,1],-.1,Bins[ii,2],0,lwd=1,col = color.list.eps[Bins[ii,6] %% 2])
+}
+
+for (ii in 1:6){
+  rect(max(Bins[Bins[,6]==ii,1]),-.2,min(Bins[Bins[,6]==ii,2]),-.1,lwd=1,col = color.list.eps[ii %% 2])
+}
+for (ii in 1:27){
+  text(midpoints[ii],-.05,substr(interval.names[ii],1,3),cex=.5,srt=90)
+}
+for (ii in 1:6){
+  text((min(Bins[Bins[,6]==ii,2])+max(Bins[Bins[,6]==ii,1]))/2,-.15,epoch.names[ii],cex=0.6)
+}
+```
+
+&emsp;&emsp;随着时间变化，物种的轨迹呈现了波动趋势的变化。
+
+```{r}
+source("C:\\Users\\Lenovo\\Desktop\\data_project\\plotallsamplingrates_SI.R") # 加载程序包
+```
+
+&emsp;&emsp;结论（意义）：对全球恐龙记录数据集的TRiPS应用表明，关于恐龙物种多度轨迹的一些普遍观点可能是抽样偏差的结果，或者是由于使用的方法可能对多度估计引入了新的偏差假设。
+
+# 本章汇总
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+
+data=read_excel("C:\\Users\\Lenovo\\Desktop\\data_project\\参考包.xlsx")
+kable(head(data ,4))
+```
+
+# 参考文献
+
+[1] http://dx.doi.org/10.1098/rspb.2017.1556
+
+[2] https://www.docin.com/p-1935139116.html

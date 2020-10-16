@@ -1,0 +1,277 @@
+---
+title: "关联测度与矩阵"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+
+<font size=4 face="微软雅黑">
+
+# 相关系数概念
+
+## 关联测度
+
+***
+<font size=4 face="微软雅黑">
+&emsp;&emsp;关联测度，简言之是对关联的指标进行测量，检测指标间是否存在相关性。一种是R型相关测量,主要是对变量之间的依赖性（dependence）测度，如协方差或相关系数；另一种是Q型相关测量，常指距离（distance)（相异性）或相似性(similarity)测量。如欧氏距离、Jaccard相似系数；
+
+<font size=4 face="微软雅黑">
+
+## 皮尔逊相关系数
+<font size=4 face="微软雅黑">
+&emsp;&emsp;皮尔逊相关系数是比欧几里德距离更加复杂的可以判断人们兴趣的相似度的一种方法。假设有两个变量X、Y，那么两变量间的皮尔逊相关系数可通过以下公式计算：
+
+<div align=center>
+![ ](C:\\Users\\Lenovo\\Desktop\\data_3\\皮尔逊相关系数.jpg)
+</div>
+
+&emsp;&emsp;其中E是数学期望，cov表示协方差，分母是两个变量的标准差。
+<font size=4 face="微软雅黑">
+
+## 斯皮尔曼相关系数
+
+<font size=4 face="微软雅黑">
+&emsp;&emsp;斯皮尔曼相关系数被定义成 等级变量之间的皮尔逊相关系数。 即样本容量为X和Y的N个样本，将被转换成n个X和Y的等级数据，相关系数ρ为：
+
+<div align=center>
+![ ](C:\\Users\\Lenovo\\Desktop\\data_3\\斯皮尔曼相关系数.jpg)
+</div>
+
+&emsp;&emsp;其中E是数学期望，cov表示协方差，分母是两个变量的标准差。
+
+## 肯德尔相关系数
+
+<font size=4 face="微软雅黑">
+&emsp;&emsp;无参数假设检验，它使用计算而得的相关系数去检验两个随机变量的统计依赖性。肯德尔相关系数的取值范围在-1到1之间，当τ为1时，表示两个随机变量拥有一致的等级相关性；当τ为-1时，表示两个随机变量拥有完全相反的等级相关性；当τ为0时，表示两个随机变量是相互立的。
+
+&emsp;&emsp;X、Y（也可以看做两个集合），它们的元素个数均为N，两个随即变量取的第i（1<=i<=N）个值分别用Xi、Yi表示。X与Y中的对应元素组成一个元素对集合XY，其包含的元素为(Xi, Yi)（1<=i<=N）。当集合XY中任意两个元素(Xi, Yi)与(Xj, Yj)的排行相同时（也就是说当出现情况1或2时；情况1：Xi>Xj且Yi>Yj，情况2：Xi<Xj且Yi<Yj），这两个元素就被认为是一致的。当出现情况3或4时（情况3：Xi>Xj且Yi<Yj，情况4：Xi<Xj且Yi>Yj），这两个元素被认为是不一致的。当出现情况5或6时（情况5：Xi=Xj，情况6：Yi=Yj），这两个元素既不是一致的也不是不一致的。计算肯德尔相关系数的值如下：
+
+<div align=center>
+![ ](C:\\Users\\Lenovo\\Desktop\\data_3\\肯德尔相关系数.jpg)
+</div>
+
+&emsp;&emsp;其中C表示XY中拥有一致性的元素对数（两个元素为一对）；D表示XY中拥有不一致性的元素对数。
+
+&emsp;&emsp;注意：这一公式仅适用于集合X与Y中均不存在相同元素的情况（集合中各个元素唯一）。
+
+## Jaccard相似系数
+<font size=4 face="微软雅黑">
+&emsp;&emsp;用于比较有限样本集之间的相似性与差异性。Jaccard系数值越大，样本相似度越高。给定两个集合A,B，Jaccard系数定义为A与B交集的大小与A与B并集的大小的比值，定义如下：
+
+<div align=center>
+![ ](C:\\Users\\Lenovo\\Desktop\\data_3\\Jaccard相似系数.jpg)
+</div>
+
+&emsp;&emsp;当集合A，B都为空时，J(A,B)定义为1。与Jaccard系数相关的指标叫做Jaccard 距离，用于描述集合之间的不相似度。公式定义如下：
+<div align=center>
+![ ](C:\\Users\\Lenovo\\Desktop\\data_3\\Jaccard相似系数2.jpg)
+</div>
+
+&emsp;&emsp;Jaccard距离越大，样本相似度越低。
+
+## Bray-Curits相异系数
+
+<font size=4 face="微软雅黑">
+&emsp;&emsp;Bray-Curtis 相异度（Bray-Curtisdissimilarity）是生态学中用来衡量不同样地物种组成差异的测度。由J. Roger Bray and John T.Curtis提出。其计算基于样本中不同物种组成的数量特征（多度，盖度，重要值等）。计算公式为：
+
+<div align=center>
+![ ](C:\\Users\\Lenovo\\Desktop\\data_3\\Bray-Curits相异系数.jpg)
+</div>
+
+&emsp;&emsp;其中k是物种数（样地-物种矩阵中的物种数），y表示物种多度，i和j表示相比较的两个样地的编号。
+
+# 相关系数应用分析
+
+## 导入数据
+***
+<font size=4 face="微软雅黑">
+
+&emsp;&emsp;对以下程序包用install.packages（"包名"）进行安装，再进行加载。
+
+## 加载函数包
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+library(ade4)
+library(vegan)	# 应该先加载ade4再加载vegan，以避免一些冲突
+library(gclus)
+library(cluster)
+library(FD)
+```
+
+## 数据结构查看
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+# 导入CSV格式的数据
+spe <- read.csv("C:\\Users\\Lenovo\\Desktop\\data_3\\DoubsSpe.csv", row.names=1)
+str(spe)
+env <- read.csv("C:\\Users\\Lenovo\\Desktop\\data_3\\DoubsEnv.csv", row.names=1)
+str(env)
+spa <- read.csv("C:\\Users\\Lenovo\\Desktop\\data_3\\DoubsSpa.csv", row.names=1)
+str(spa)
+```
+
+&emsp;&emsp;通过str查看数据结构，得值数据结构为int和num类型，可进一步对数据进行矩阵测度和相关性检验。
+
+
+## Bray-Curtis相异矩阵
+***
+
+&emsp;&emsp;Bray-Curtis相异矩阵定量与半定量数据的相异和距离测度常用Bray-Curtis。Bray-Curtis相异度是生态学中用来衡量不同样地物种组成差异的测度，其计算基于样本中不同物种组成的数量特征（多度，盖度，重要值等）。Bray-curtis计算时，不仅考虑样本中物种的有无，而且还考虑不同物种的相对丰度。
+
+###  Bray-Curtis相异系数
+
+&emsp;&emsp;默认使用Bray-Curtis相异系数，得到前6行的相异相异系数值为：0.6000000，0.6842105， 0.7500000 ，0.8918919 ，0.7500000 ，0.6842105。
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+spe.db <- vegdist(spe)	# Bray-Curtis相异系数（默认）
+head(spe.db)
+```
+
+###  对数化Bray-Curtis相异系数
+
+&emsp;&emsp;为什么要对数据进行对数化？
+
+&emsp;&emsp;优点：1. 缩小数据的绝对数值，方便计算。例如，每个数据项的值都很大，许多这样的值进行计算可能对超过常用数据类型的取值范围，这时取对数，就把数值缩小，便于计算；2. 取对数后，可以将乘法计算转换称加法计算；3.数据的整个值域中的在不同区间的差异带来的影响不同，对数值小的部分差异的敏感程度比数值大的部分的差异敏感程度更高；4. 取对数之后不会改变数据的性质和相关关系，但压缩了变量的尺度，数据更加平稳，也消弱了模型的共线性、异方差性等。
+
+&emsp;&emsp;当然，如果数据集中有负数当然就不能取对数了。实践中，取对数的一般是水平量，而不是比例数据，例如变化率等。
+
+&emsp;&emsp;对数转化后物种数据的Bray-Curtis相异矩阵，Bray-Curtis相异矩阵前6行的结果为：0.5509095 ，0.6280761 ，0.7446012， 0.8664653， 0.7657643 ，0.6519273。发现取对数和默认状态下的Bray-Curtis相比，系数值减小了，则说明未取对数前数据中存在一些数值的差异。
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+
+spe.dbln <- vegdist(log1p(spe))
+head(spe.dbln)
+```
+
+## 弦距离矩阵
+
+&emsp;&emsp;弦距离矩阵，简言之，范数标准化后再计算欧氏距离。即将所有的点假想分布在圆上，对圆上各点的距离进行计算。
+
+&emsp;&emsp;对各点进行弦距离矩阵计算，前6行结果为 0.7653669 ,0.9235374, 1.0432236 ,1.2786132 ,1.1153793 ,0.8873116.
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+spe.norm <- decostand(spe, "nor")
+spe.dc <- dist(spe.norm)
+head(spe.dc)
+```
+
+## Hellinger距离矩阵
+
+&emsp;&emsp;Hellinger Distance 被用来衡量两个概率分布之间的相似性.在概率论和统计理论中，Hellinger距离被用来度量两个概率分布的相似度。它是f散度的一种（f散度——度量两个概率分布相似度的指标）。Hellinger距离被定义成Hellinger积分的形式，这种形式由Ernst Hellinger在1909年引进。原理：除以样方多度总和再取平均值后计算欧氏距离。
+
+&emsp;&emsp;Hellinger距离矩阵前6行结果为0.8420247， 0.9391305， 1.0616631， 1.2308244 ，1.1153793 ，0.9391305。
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+spe.hel <- decostand(spe, "hel")
+spe.dh <- dist(spe.hel)
+head(spe.dh)
+```
+
+## Jaccard相异矩阵
+***
+
+&emsp;&emsp; Jaccard在分析时，只考虑样本中物种的有无，而不考虑丰度。
+
+&emsp;&emsp;注意：所有的二元距离函数在计算系数时，均会自动对数据进行二元转化
+因此这里的数据不需要二元转化（decostand(，"pa")）。函数dist.binary（）
+会自动对数据进行二元转化，但函数vegist（）需要设定参数binary=TRUE。
+
+### vegdist函数计算Jaccard相异矩阵
+
+&emsp;&emsp;vegdist函数计算Jaccard相异矩阵如下，前6行的计算结果为0.6666667， 0.7500000， 0.8750000 ，0.9090909 ，0.9000000，0.8000000。
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+spe.dj <- vegdist(spe, "jac", binary=TRUE)
+head(spe.dj)
+```
+
+
+### dist函数计算Jaccard相异矩阵
+
+&emsp;&emsp;dist函数计算Jaccard相异矩阵如下，前6行的计算结果为0.6666667， 0.7500000 ，0.8750000 ，0.9090909 ，0.9000000 ，0.8000000。
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+spe.dj2 <- dist(spe, "binary")
+head(spe.dj2)
+```
+
+### dist.binary计算Jaccard相异矩阵
+
+&emsp;&emsp;使用dist.binary的Jaccard相异矩阵，前6行的计算结果为0.8164966， 0.8660254， 0.9354143 ，0.9534626， 0.9486833 ，0.8944272。
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+spe.dj3 <- dist.binary(spe, method=1)
+head(spe.dj3 )
+```
+
+### dist.binary计算Sorensen相异矩阵
+
+&emsp;&emsp;使用dist.binary（）函数计算Sorensen相异矩阵,得到前6行结果为0.7071068， 0.7745967， 0.8819171， 0.9128709 ，0.9045340， 0.8164966
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+spe.ds <- dist.binary(spe, method=5)
+head(spe.ds)
+```
+
+###vegdist计算Sorensen相异矩阵
+
+&emsp;&emsp; 使用vegdist（）函数计算Sorensen相异矩阵,得到前6行的结果为0.5000000， 0.6000000， 0.7777778， 0.8333333， 0.8181818 ，0.6666667。
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+spe.ds2 <- vegdist(spe, binary=TRUE)
+head(spe.ds2)
+```
+
+
+## 环境变量之间的相关系数
+
+***
+
+### Pearson相关系数
+
+&emsp;&emsp; 环境变量之间的Pearson线性相关系数
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+env.pearson <- cor(env)	#默认 method = "pearson“
+round(env.pearson, 2)
+```
+
+### Spearman相关系数
+
+&emsp;&emsp; 环境变量之间的Spearman相关系数
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+env.spearman <- cor(env, method = "spearman")	
+round(env.spearman, 2)
+```
+
+### Kendall相关系数
+
+&emsp;&emsp;环境变量之间的Kendall相关系数
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+env.kendall <- cor(env, method = "kendall")	
+round(env.kendall, 2)
+```
+
+## 本章汇总
+***
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+data=read_excel("C:\\Users\\Lenovo\\Desktop\\data_3\\关联度矩阵函数包.xlsx")
+kable(head(data ,6))
+```
+
+## 参考文献
+***
+</font>
+
+&emsp;&emsp;[1] 赖江山译. 《数量生态学——R语言的应用》. 
+
+&emsp;&emsp;[2]https://www.jianshu.com/p/744d71f235c4
+

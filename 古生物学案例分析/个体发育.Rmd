@@ -1,0 +1,154 @@
+---
+title: "个体发育分析"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+
+<font size=4 face="微软雅黑">
+  
+
+
+&emsp;&emsp;个体发育，指的是一种生物从其出生到死亡的整个过程中身体出现的形态变化。从幼体到成年，生物的形态变化通常比较明显。在古生物学中研究个体发育，一方面有助于理解不同化石物种的生长变化；另一方面，也有助于在后续研究辅助化石的鉴定。在古生物的个体发育研究中，通常会总结一种生物不同身体部位随年龄增长的变化趋势、这种趋势或是某些器官的增大，或是某些结构数量的增加。由于生物的种类千差万别，因此不同古生物的个体发育过程也存在很大差异，需要根据实际情况选用适宜的衡量标准。
+
+# 数据描述
+
+```{r,warning=FALSE}
+#先安装包：install.packages("PerformanceAnalytics")
+setwd("C:\\Users\\Lenovo\\Desktop\\data_3")
+library(PerformanceAnalytics)
+library(readxl)
+data=read_excel("Ontogeny_echinoderms.xlsx")
+head(data)
+str(data)
+```
+
+&emsp;&emsp;数据共有18条记录，6个变量，数据类型都为数值型数据。为描述各变量之间的相关性情况，对数据进行形态相关分析如下：
+
+# 个体变量相关性分析
+```{r,warning=FALSE}
+chart.Correlation(data, pch="+")
+```
+
+&emsp;&emsp;选择生物的个体发育指标，得到形态相关的相关性值，可以了解到stem_length和thecal_height相关性为0.8，二者相关性强度较高，其次是thecal_height和minimun N_brachioles的相关性最好。
+
+
+# 个体发育趋势分析
+
+&emsp;&emsp;利用贝叶斯信息准则（BIC）作出的频率分布图利用贝叶斯信息准则（BIC）作出的频率分布图，探究各变量之间的正太性和核密度分布，如下图所示：
+
+```{r}
+setwd("C:\\Users\\Lenovo\\Desktop\\data_3")
+data1=read_excel("Ontogeny_echinoderms_1.xlsx")
+str(data1)
+layout(matrix(c(1,2,3,4,5,6),2,3,byrow = TRUE))
+plot(data1$X,data1$A1,type="b",yaxt="n",ylab="Precent  surviviing",xlab="Length   (mm)",pch=1,lwd=2,lty=1)
+par(new=TRUE)  # 是否叠加新图形，没叠加一次运行一次该命令
+plot(data1$X,data1$A2,type="b",ylab="Precent  surviviing",xlab="Length   (mm)",pch=4,lwd=1,lty=6)
+text(8, -50,"A")
+
+plot(data1$X,data1$B1,type="b",yaxt="n",ylab="Precent  surviviing",xlab="Length   (mm)",pch=1,lwd=2,lty=1)
+par(new=TRUE)  # 是否叠加新图形，没叠加一次运行一次该命令
+plot(data1$X,data1$B2,type="b",ylab="Precent  surviviing",xlab="Length   (mm)",pch=4,lwd=1,lty=6)
+text(8,-146, "B")
+
+plot(data1$X,data1$C1,type="b",ylab="Precent  surviviing",xlab="Length   (mm)",pch=1,lwd=2,lty=1)
+par(new=TRUE)  # 是否叠加新图形，没叠加一次运行一次该命令
+plot(data1$X,data1$C2,type="b",ylab="Precent  surviviing",xlab="Length   (mm)",pch=4,lwd=1,lty=6)
+text(8, -33, "C")
+
+hist(data$thecal_height, prob=T, xlab='',main='Histogram of maximum pH value')#画直方图
+lines(density(data$thecal_height,na.rm=T))#画概率密度曲线
+text(1.5, 1.5, "D")
+
+hist(data$circlets_plates_No, prob=T, xlab='',main='Histogram of maximum pH value',ylim=0:1)#画直方图
+lines(density(data$circlets_plates_No,na.rm=T))#画概率密度曲线
+text(10, 0.9, "E")
+
+hist(data$ stem_length, prob=T, xlab='',main='Histogram of maximum pH value')#画直方图
+lines(density(data$ stem_length,na.rm=T))#画概率密度曲线
+text(1.5, 1.5, "F")
+```
+
+&emsp;&emsp;五组测量变量间的一一对应关系如上所示，说明长度在5到11的呈现右偏分布，0.5到1.5的基本呈现正态分布。
+
+## 皮尔逊相关性检验分析
+
+```{r}
+#要先安装basicTrendline包
+library(basicTrendline)
+trendline(data$thecal_height,data$stem_length, ,model="line3P",Pvalue.corrected = TRUE,
+          linecolor = "yellow", lty = 0, lwd = 1, show.equation = FALSE,
+          show.Rpvalue = FALSE, Rname = 1, Pname = 0, xname = "x", yname = "y",
+          yhat = FALSE, summary = FALSE, ePos.x = NULL, ePos.y = NULL,
+          text.col = "black", eDigit = 5, eSize = 1, CI.fill = TRUE,
+          CI.level = 0.95, CI.color = "white", CI.alpha = 1, CI.lty = 1,
+          CI.lwd = 1, las = 1, xlab = NULL, ylab = NULL,xaxt="n",yaxt="n")
+```
+
+&emsp;&emsp;由上图知，皮尔相关系数为0.67609,P值为0.000212.说明变量之间存在很强的显著性差异，变量之间的相关性较好。
+
+## 回归系数分析结果
+
+```{r}
+library(basicTrendline)
+trendline(log(data$thecal_height),log(data$stem_length), Pvalue.corrected = TRUE,
+          linecolor = "black", lty = 1, lwd = 2, show.equation = FALSE,
+          show.Rpvalue = TRUE, Rname = 1, Pname = 0, xname = "x", yname = "y",
+          yhat = FALSE, summary = FALSE, ePos.x = NULL, ePos.y = NULL,
+           eDigit = 5, eSize = 1, CI.fill = TRUE,
+          CI.level = 0.95, CI.color = "white", CI.alpha = 1, CI.lty = 1,
+          CI.lwd = 1, las = 1, xlab ="", ylab ="",xaxt="n",yaxt="n")
+par(new=TRUE)
+##95%的结果
+mode=lm(log(data$thecal_height)~log(data$stem_length))
+trendline(fitted(mode),log(data$stem_length),CI.fill = FALSE,CI.color = "red",CI.lty = 2,linecolor = "red",summary =FALSE,Pvalue.corrected = FALSE, show.equation = FALSE,xlab = "",text.col = "white")
+par(new=TRUE)
+
+trendline(log(data$thecal_height),log(data$stem_length),model="line3P",ePos.x = "topleft",summary =FALSE,eDigit = 5,CI.fill = FALSE,text.col = "white",ylab =NULL,xaxt="n",yaxt="n",Pvalue.corrected = FALSE,show.Rpvalue =FALSE,show.equation = FALSE)
+```
+
+
+
+## 拟合回归分析
+
+```{r}
+library(basicTrendline)
+##OLS回归的结果
+mode=lm(log(data$thecal_height)~log(data$stem_length))
+trendline(fitted(mode),log(data$stem_length),text.col = "white",CI.fill = FALSE,CI.color = "white",CI.lty = 2,linecolor = "black",xlab="",xaxt="n",yaxt="n",lty=1)
+
+# 95%置信信区间
+par(new=TRUE)
+trendline(log(data$thecal_height),log(data$stem_length),model="line3P",ePos.x = "topleft",summary =FALSE,eDigit = 5 ,CI.fill = "FALSE",text.col = "white",xaxt="n",linecolor = "white",yaxt="n",CI.color = "green",lty=2)
+# 取对数的拟合曲线
+par(new=TRUE)
+trendline(log(data$thecal_height),log(data$stem_length),CI.fill = FALSE,CI.color = "red",CI.lty = 5,linecolor = "white",Pvalue.corrected = TRUE, show.equation = FALSE,
+          show.Rpvalue = FALSE)
+legend("bottomright",c("Observed","OLS fit","95% CL","log() fit"), col=c("black","black","green","red"),
+text.col = "green4", pch = c(1, 1,1,1),lty = c(0,1,2,5),bty="n",
+merge = F) 
+```
+
+&emsp;&emsp;通过拟合回归分析得到可决系数值为75.863%，P值远小于0.0001。变量之间的相关系数较好。
+
+# 本章汇总
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+data=read_excel("C:\\Users\\Lenovo\\Desktop\\data_3\\函数.xlsx")
+kable(head(data ,9))
+```
+
+
+# 参考文献
+
+[1]https://blog.csdn.net/tandelin/article/details/99547342

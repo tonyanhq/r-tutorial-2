@@ -1,0 +1,143 @@
+---
+title: "4 种丰度模型"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+  
+  <font size=4 face="微软雅黑">
+  
+# 案例(一)研究概述
+
+&emsp;&emsp;通过研究不同的采样地点发现的海软体动物化石，对其中的暖水型捕食者和世界型/冷水型捕食者的物种丰度进行研究和探索。
+
+## 加载包
+```{r}
+library(readxl) #读取xlsx文件
+```
+
+## 读取案例(一)数据
+```{r}
+re_data <- read_xlsx('C:\\Users\\dell\\Desktop\\北大R语言\\种丰度模型1.xlsx') #读取种丰度模型1
+str(re_data)
+```
+
+&emsp;&emsp;通过str函数可以发现数据集共有58条数据，9个变量，其中Species和Category为字符串型数据，w2-w9为采样范围，total等于w2-w9的和。
+
+## 案例(一)数据预处理
+```{r}
+warm_water <- re_data[which(re_data$Category == "Warm-water"),] #筛选Category列类型为Warm-water的数据
+cos_cold <- re_data[which(re_data$Category == "Cosmopolitan/\r\nCold-water"),] #筛选Category列类型为Cosmopolitan/Cold-water的数据
+```
+
+&emsp;&emsp;筛选出选Category列类型为Warm-water和Cosmopolitan/Cold-water的数据
+
+```{r}
+total <- apply(re_data[,3:8], 2, sum) #w4-w9列求和
+```
+
+&emsp;&emsp;计算出物种总数
+
+```{r}
+warm_water1 <- apply(warm_water[,3:8], 2, sum) #w4-w9列求和
+cos_cold1 <- apply(cos_cold[,3:8], 2, sum) #w4-w9列求和
+plot_data <- data.frame()
+plot_data[1:6,'Warm-water predator'] <- warm_water1 * 10 / total #计算Warm_water_predator物种丰度
+plot_data[1:6,'Cosmopolitan/Cold-water predator'] <- cos_cold1 * 100 / total #计算Cosmopolitan/Cold-water物种丰
+rownames(plot_data) <- names(total)
+plot_data[4:6, 1] <- 0
+head(plot_data)
+```
+
+&emsp;&emsp;计算物种相对丰度(计算方法是某个物种的个体数目/ 全部物种的个体数目)
+
+## 绘制种丰度条形图
+```{r}
+barplot(as.matrix(t(plot_data)),xlab = 'Sampling horizon', ylab = 'Relative abundance(%)', ylim = c(0, 3), col = c('black', 'white'), legend = rownames(t(plot_data)), beside = TRUE)
+text(10.5,0.1,'+',cex=1.2);text(13.5,0.1,'-',cex=1.2);text(16.5,0.1,'-',cex=1.2)
+```
+
+&emsp;&emsp;黑色表示的是暖水型捕食者，白色的是世界型/冷水型捕食者，在w4和w5中暖水型捕食者的物种丰度大于世界型/冷水型捕食者(+代表存在，-代表缺失)。
+
+# 案例(二)研究概述
+
+&emsp;&emsp;鞘翅目（甲虫）是种类最丰富的后生动物目，约有38万种。为了了解它们是如何形成这样一个多样化的群体的，通过一个全球甲虫化石分布数据集，以研究它们的宏观进化史，该数据集包括来自221个化石地点的5553个甲虫。
+
+## 加载包
+```{r}
+library(plotrix) #绘制双坐标图
+```
+
+## 读取案例(二)数据
+```{r}
+data1 <- read.csv('C:\\Users\\dell\\Desktop\\北大R语言\\种丰度模型2 表1.csv') #读取种丰度模型2 表1.csv数据
+str(data1)
+data2 <- read.csv('C:\\Users\\dell\\Desktop\\北大R语言\\种丰度模型2 表2.csv') #读取种丰度模型2 表2.csv数据
+str(data2)
+```
+
+&emsp;&emsp;data1是关于甲虫化石信息的数据，共有5553条数据，其中前四个变量分别表示的是昆虫的亚目、科、属、种名，collection_no表示的是化石发现地编号。
+
+&emsp;&emsp;data2是关于化石地点信息的数据，共有221条数据，其中collection_no表示的是化石发现地编号，collection name表示的是发现地名称，formation表示的是岩石地层，epoch和subepoch是关于地层年代信息，ma max表示的是地层年代最大值，ma min表示的是地层年代最小值，lithdescript表示的是采集化石围岩的岩性。
+
+## 案例(二)数据预处理
+```{r}
+num_col <- data.frame(table(data1$collection_no)) #统计收集地点(collection_no)采集到的昆虫数
+names(num_col) <- c('collection_no','occurrences') #变量重新命名
+```
+
+&emsp;&emsp;统计data1中每一个收集地点(collection_no)所采集到的昆虫数。
+
+```{r}
+year <- subset(data2, select = c(collection_no, ma_max, ma_min)) #筛选出data2中的列collection_no, ma_max, ma_min
+year['mean_year'] <- (year$ma_max + year$ma_min) / 2 #求取地层年代的中间值
+year['time'] <- ceiling(year$mean_year / 25) #以25个百万年间隔划分mean_year(地层年代的中间值)
+```
+
+&emsp;&emsp;计算出data2中每个收集地点的地层年代平均值，并将地层年代平均值以25个百万年间隔划分为12个年代区间，time中的1表示0-25百万年，2表示25-50百万年......12表示的是275-300万年。
+
+```{r}
+new_data <- merge(year, num_col, by = 'collection_no') #合并数据集year，num_col
+```
+
+&emsp;&emsp;合并数据集year，num_col
+
+```{r}
+plot_data2 <- data.frame(time = 1:12)
+plot_data2['occurrences'] <- tapply(new_data$occurrences, new_data$time,  sum) #统计在每个年代区间采集到的昆虫
+plot_data2['collection'] <- table(new_data$time) #统计在每个年代区间的化石地点数
+head(plot_data2)
+```
+
+&emsp;&emsp;plot_data2中列occurrences为每个年代区间采集到的昆虫数，列collection为每个年代区间的化石地点数
+
+## 绘制种丰度折线图
+```{r}
+time <- c(12:1) ; time <- time * 25
+twoord.plot(lx = c(12:1), ly = plot_data2$occurrences, rx = c(12:1), ry  = plot_data2$collection, lpch = 1, rpch = 1,xlab = 'time(Ma)', ylab = 'no.occurrences', rylab = 'no.collections', xticklab = time, xtickpos = c(0.65:11.65), lwd = 2, rcol = 'red' , lcol = 'black')
+legend('topleft', leg = c('collections','occurrences'), col = c('red', 'black'), lty = 1, bty = 'n', pch = c(1, 1), lwd = 2)
+```
+
+&emsp;&emsp;从图中可以看出在地层年代为25-50百万年昆虫化石数量和化石发现地最多，且昆虫化石数量和化石发现地的波动基本一致。甲虫科的总体取样随着时间的推移而变化，在晚侏罗世到早白垩世和中新生代发现的甲虫的采集和标本出现数量达到高峰。从白垩纪中期到晚白垩世是一个采样率特别低的时期，无论是在采集数量还是出现次数上。大陆脊椎动物化石记录中也记录了类似的模式，至于这是否归因于更大的全球过程，如海洋海侵和海退旋回，仍存在争议。
+
+# 本章汇总
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+data=read_excel("C:\\Users\\dell\\Desktop\\北大R语言\\4+种丰度模型.xlsx")
+kable(head(data ,9))
+```
+
+
+# 参考文献
+
+[1] Tomoki Chiba,Shin’ichi Sato.Climate-mediated changes in predator–prey interactions in the fossil record: a case study using shell-drilling gastropods from the Pleistocene Japan Sea[J].Published online by Cambridge University Press: 09 February 2016
+
+[2] Dena M. Smith,Jonathan D. Marcot.The fossil record and macroevolutionary history of the beetles[J].PROCEEDINGS OF THE ROYAL SOCIETY B

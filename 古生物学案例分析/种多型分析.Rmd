@@ -1,0 +1,227 @@
+---
+title: "2-7 种多型分析"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+  
+  <font size=4 face="微软雅黑">
+  
+# 基本概念
+
+&emsp;&emsp;在古生物学研究中，有时可以观察到同一种化石的个体间在形态或者结构方面存在明显差异的现象，被称为种多型或多态现象（polymorphism）。与现代生物学中定义的广义多态性——指地球上所有生物，从食物链系统、物种水平、群体水平、个体水平、组织和细胞水平、分子水平、基因水平等层次上体现出的形态（morphism）和状态（state）的多样性——不同，古生物学中的多态或多型的概念通常所指的是种内同性别个体间形态的变化（intraspecific morphological variability）。这些差异又可以被区分为体型决定的（size-dependent shape changes）和非体型决定的形态变化（non-size-dependent shape changes）。前者普遍被认为是由发育因素（developmental factors）控制的，因为体型的大小与个体发育（ontogeny）息息相关，而后者被认为是由环境因素（environmental factors）如地理分区（regional difference）等影响的。定量古生物学中的几何形态测量法（Geometric Morphometrics）非常适合应用于种多型的研究
+
+# 案例
+
+## 案例介绍
+
+&emsp;&emsp;在以往对介形类物种个体形态变异的研究中，基于界点（landmark）或者半界点（semi-landmark）的分析方法还没有很好地建立起来。通过对采自中新世晚期湖相沉积物中的介形类化石Cytheridella danielopoli和现生同属的Cytheridella ilosvayi形态变异的研究，利用几何形态测量法，识别不同发育阶段和性别的形态变化，以及区分不同地理位置种群个体形态之间的差异，并且检验基于界点和半界点的分析方法应用于介形类研究的可行性。
+
+## LV、RV散点图
+
+```{r}
+#读取数据
+library(readxl) #加载readxl包,用于读取excel数据
+data_lv <- data_rv <- read_excel('C:\\Users\\dell\\Desktop\\北大R语言\\2-7 种多型分析\\Rel Warps Scores and CVA data_Cytheridella.xlsx',
+sheet = 'Left valves RelWarps Scores')
+dim(data_lv) #查看数据维度
+data_rv <- read_excel('C:\\Users\\dell\\Desktop\\北大R语言\\2-7 种多型分析\\Rel Warps Scores and CVA data_Cytheridella.xlsx',
+sheet = 'Right valves Rel Warps Scores')
+dim(data_rv) #查看数据维度
+```
+
+&emsp;&emsp;读取Excel表中sheet簿Left valves RelWarps Scores并命名为data_lv，通过dim函数看出它有260行，137列。读取Excel表中sheet簿Right valves Rel Warps Scores并命名为data_rv，通过dim函数看出它有247行，137列。
+
+```{r}
+#数据预处理
+data_lv1 <- data_lv[, 1 : 7] #选取变量前7列
+head(data_lv1)
+names(data_lv1)[2] <- 'sex_instar' ; names(data_lv1)[4] <- 'log_10' #变量重命名
+table(data_lv1$sex_instar) #查看sex_instar频数
+data_lv1$sex_instar <- gsub('A-3|A-4', 'A-3/4', data_lv1$sex_instar) #将sex_instar变量中A-3和A-4合并为A-3/4
+data_lv1[1 : 51, 'sex_instar'] <- paste(unlist(data_lv1[1 : 51, 'sex_instar']), ' C dan', sep = '') #前46行为C. danielopoli
+data_lv1[52 : 260, 'sex_instar'] <- paste(unlist(data_lv1[52 : 260, 'sex_instar']), ' C ilo', sep = '') #47行到结束为C. ilosvayi 
+table(data_lv1$sex_instar)
+
+data_rv1 <- data_rv[, 1 : 7] #选取变量前7列
+head(data_rv1)
+names(data_rv1)[2] <- 'sex_instar' ; names(data_rv1)[4] <- 'log_10' #变量重命名
+table(data_rv1$sex_instar) #查看sex_instar频数
+data_rv1$sex_instar <- gsub('A-3|A-4', 'A-3/4', data_rv1$sex_instar) #将sex_instar变量中A-3和A-4合并为A-3/4
+data_rv1[1 : 46, 'sex_instar'] <- paste(unlist(data_rv1[1 : 46, 'sex_instar']), ' C dan', sep = '') #前46行为C. danielopoli
+data_rv1[47 : 247, 'sex_instar'] <- paste(unlist(data_rv1[47 : 247, 'sex_instar']), ' C ilo', sep = '') #47行到结束为C. ilosvayi 
+table(data_rv1$sex_instar)
+```
+
+&emsp;&emsp;由于data_lv列数太多，而我们只需要前7列数据，所以筛选出前7列并命名为data_lv1。通过table函数查看列sex_instar各类别的频数，发现A-3、A-4的频数最少只有16、1，所以将A-3和A-4统一合并为A-3/4。前46行数据都是C. danielopoli，47行到结束都是C. ilosvayi，通过paste函数将c dan或c ilo添加到sex_instar。data_rv1同理。
+
+```{r}
+#自定义分组散点图
+group_plot <- function(x, y, group, col, pch, xlab, ylab, axlim, aylim) {
+data <- data.frame(x = x, y = y, group = group) #合并数据框
+lev <- levels(as.factor(data$group)) #查看类型个数
+for(i in 1 : length(lev)){ #循环散点图,循环次数等于类型个数
+dd <- data[which(data$group == lev[i]), ] #筛选出类型为lev[i]的数据
+plot(dd$x, dd$y, xlim = c(axlim * min(data$x), axlim * max(data$x)),xlab = xlab, ylab = ylab,
+ylim = c(aylim * min(data$y), aylim * max(data$y)), pch = pch[i], col = col[i], cex = 1.1) 
+#绘制散点图,min(data$x)为负则axlim值大于等于1,min(data$x)为正则axlim值小于等于1（min(data$y)与aylim同理）
+par(new = TRUE) #叠加图层
+}
+}
+```
+
+&emsp;&emsp;自定义分组散点图函数
+
+```{r}
+#画图
+pch <- c(19, 19, 3, 3, 0, 0, 17, 17, 4, 4) #设置散点形状
+col <- rep(c('blue', 'gray'), 5) #设置散点颜色
+par(mfrow = c(2, 2), mar = c(4, 4, 1, 1))
+group_plot(data_lv1$RW1, data_lv1$RW2, data_lv1$sex_instar, col, pch, 'RW1', 'RW2', 1.2, 1.2)
+text(-0.072, 0.035, 'LV', cex = 1.2, font = 2) #左上角添加'LV'
+legend('bottomleft', legend = levels(as.factor(data_lv1$sex_instar)), col = col, pch = pch, 
+bty = 'n', cex = 0.62, ncol = 2) #添加图例
+group_plot(data_rv1$RW1, data_rv1$RW2, data_rv1$sex_instar, col, pch, 'RW1', 'RW2', 1.2, 1.2)
+text(-0.055, 0.047, 'RV', cex = 1.2, font = 2) #左上角添加'RV'
+group_plot(data_lv1$RW1, data_lv1$RW3, data_lv1$sex_instar, col, pch, 'RW1', 'RW3', 1.2, 1.2)
+text(-0.072, 0.045, 'LV', cex = 1.2, font = 2) #左上角添加'LV'
+group_plot(data_rv1$RW1, data_rv1$RW3, data_rv1$sex_instar, col, pch, 'RW1', 'RW3', 1.2, 1.2)
+text(-0.055, 0.047, 'RV', cex = 1.2, font = 2) #左上角添加'RV'
+```
+
+&emsp;&emsp;左右壳（LV、RV）的Relative warps analysis散点图，横坐标为RW1，纵坐标由上到下分别是RW2和RW3
+
+## 幼年个体和成年个体的CVA图
+```{r}
+#读取数据
+lv_cva <- read_excel('C:\\Users\\dell\\Desktop\\北大R语言\\2-7 种多型分析\\Rel Warps Scores and CVA data_Cytheridella.xlsx',sheet = 'Left valves CVA')
+dim(lv_cva) #查看数据维度
+rv_cva <- read_excel('C:\\Users\\dell\\Desktop\\北大R语言\\2-7 种多型分析\\Rel Warps Scores and CVA data_Cytheridella.xlsx',sheet = 'Right valves CVA')
+dim(rv_cva) #查看数据维度
+```
+
+&emsp;&emsp;读取Excel表中sheet簿Left valves CVA并命名为lv_cva，通过dim函数看出它有258行，32列。读取Excel表中sheet簿Right valves CVA并命名为rv_cva，通过dim函数看出它有248行，31列。
+
+```{r}
+#数据预处理
+#处理Left valves CVA数据
+lv_cva_ind <- lv_cva[4 : 258, 12 : 14] #筛选数据
+names(lv_cva_ind) <- c('ID', 'Axis_1', 'Axis_2') #变量重命名
+lv_cva_ind$ID <- gsub('_|-', ' ', lv_cva_ind$ID) #将ID中'_'和'-'的字符替换为' '
+lv_cva_ind$ID <- ifelse(substr(lv_cva_ind$ID, nchar(lv_cva_ind$ID), nchar(lv_cva_ind$ID)) == ' ', substr(lv_cva_ind$ID, 1, 
+nchar(lv_cva_ind$ID) - 1), lv_cva_ind$ID) #将ID中最后一个字符空格的去掉
+lv_sex <- data_lv1[, 1 : 2]
+lv_sex$ID <- gsub('_|-', ' ', lv_sex$ID) #将ID中'_'和'-'的字符替换为' '
+lv_cva_ind <- merge(lv_cva_ind, lv_sex, by = 'ID', all.x = TRUE) #合并数据,左连接
+lv_cva_ind <- unique(lv_cva_ind) #去重
+#处理Right valves CVA数据
+rv_cva_ind <- rv_cva[4 : 248, 12 : 14] #筛选数据
+names(rv_cva_ind) <- c('ID', 'Axis_1', 'Axis_2') #变量重命名
+rv_cva_ind$ID <- gsub('_|-', ' ', rv_cva_ind$ID) #将ID中'_'和'-'的字符替换为' '
+rv_cva_ind$ID <- ifelse(substr(rv_cva_ind$ID, nchar(rv_cva_ind$ID), nchar(rv_cva_ind$ID)) == ' ', substr(rv_cva_ind$ID, 1, 
+nchar(rv_cva_ind$ID) - 1), rv_cva_ind$ID) #将ID中最后一个字符空格的去掉
+rv_sex <- data_rv1[, 1 : 2]
+rv_sex$ID <- gsub('_|-', ' ', rv_sex$ID) #将ID中'_'和'-'的字符替换为' '
+rv_cva_ind <- merge(rv_cva_ind, rv_sex, by = 'ID', all.x = TRUE) #合并数据,左连接
+rv_cva_ind <- unique(rv_cva_ind) #去重
+```
+
+&emsp;&emsp;筛选出lv_cva数据中第4行到第258行，第12到第14列数据，命名为lv_cva_ind。由于在lv_cva_ind中的变量ID和data_lv1中的ID表达略有不同（如在lv_cva_ind中ID为‘AQ_19_9-#28_A-1-LV’而在data_lv1中的ID是‘AQ 19 9-#28 A-1-LV’），导致直接合并数据会失败，所以必须将lv_cva_ind的ID和data_lv1中的ID进行一个处理，即将它们的ID中的字符‘-’和‘_’都替换为‘ ’后进行匹配。匹配后的lv_cva_ind得到变量sex_instar。变量rv_cva_ind同理。
+
+```{r}
+#画图
+pch_cva <- c(19, 19, 3, 3, 0, 0, 17, 17, 4) #设置散点形状
+col_cva <- c("blue", "gray", "blue", "gray", "blue", "gray", "blue", "gray", "gray") #设置散点颜色
+par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
+group_plot(as.numeric(lv_cva_ind$Axis_1), as.numeric(lv_cva_ind$Axis_2), lv_cva_ind$sex_instar, col_cva, pch_cva, 'Axis 1', 'Axis 2', 1.2, 1.2)
+text(-6, 7, 'LV', cex = 1.2, font = 2) #左上角添加'LV'
+legend('topright', legend = levels(as.factor(lv_cva_ind$sex_instar)), col = col_cva, pch = pch_cva, 
+bty = 'n', cex = 0.6) #添加图例
+group_plot(as.numeric(rv_cva_ind$Axis_1), as.numeric(rv_cva_ind$Axis_2), rv_cva_ind$sex_instar, col_cva, pch_cva, 'Axis 1', 'Axis 2', 1.2, 1.2)
+text(-7.4, 7, 'RV', cex = 1.2, font = 2) #左上角添加'RV'
+```
+
+&emsp;&emsp;幼年个体和成年个体的CVA图解，由于C. danielopoli的雄性标本数量过少，因此没有放进统计分析里。从图中可以看出两个种之间的差异显著大于种间的形态变异。
+
+## C.dan和C.il成年雌性个体的CVA图
+
+```{r}
+#数据预处理
+#处理Left valves CVA数据
+lv_cva_area <- lv_cva[4 : 115, 29 : 31] #筛选数据
+names(lv_cva_area) <- c('ID', 'Axis_1', 'Axis_2') #变量重命名
+lv_cva_area[grep('FL', lv_cva_area$ID), 'Area'] <- 'Florida' #筛选出ID中含有FL的数据并将归类到Florida
+lv_cva_area[grep('MX', lv_cva_area$ID), 'Area'] <- 'Mexico' #筛选出ID中含有MX的数据并将归类到Mexico
+lv_cva_area[grep('BB|LC|BR|CO', lv_cva_area$ID), 'Area'] <- 'Brazil/Colombia' #筛选出ID中含有BB、LC、BR、CO的数据并将归类到Brazil/Colombia
+lv_cva_area[grep('AQ', lv_cva_area$ID), 'Area'] <- 'C. danielopoli' #筛选出ID中含有AQ的数据并将归类到C. danielopoli
+#处理Right valves CVA数据
+rv_cva_area <- rv_cva[4 : 110, 28 : 30] #筛选数据
+names(rv_cva_area) <- c('ID', 'Axis_1', 'Axis_2') #变量重命名
+rv_cva_area[grep('FL', rv_cva_area$ID), 'Area'] <- 'Florida' #筛选出ID中含有FL的数据并将归类到Florida
+rv_cva_area[grep('MX', rv_cva_area$ID), 'Area'] <- 'Mexico' #筛选出ID中含有MX的数据并将归类到Mexico
+rv_cva_area[grep('BB|LC|BR|CO|Cytheridella', rv_cva_area$ID), 'Area'] <- 'Brazil/Colombia' #筛选出ID中含有BB、LC、BR、CO、Cytheridella的数据并将归类到Brazil/Colombia
+rv_cva_area[grep('AQ', rv_cva_area$ID), 'Area'] <- 'C. danielopoli' #筛选出ID中含有AQ的数据并将归类到C. danielopoli
+```
+
+&emsp;&emsp;筛选出lv_cva数据中第4行到第115行，第29到第31列数据，命名为lv_cva_area。并根据ID编号中的前几个字母将数据划分为Florida、Mexico、Brazil/Colombia、C. danielopoli四类。rv_cva_area同理。
+
+```{r}
+#画图
+pch_area <- c(1, 5, 19, 19) #设置散点形状
+col_area <- c('black', 'blue', 'black', 'gray') #设置散点颜色
+par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
+group_plot(as.numeric(lv_cva_area$Axis_1), as.numeric(lv_cva_area$Axis_2), lv_cva_area$Area, col_area, pch_area, 'Axis 1', 'Axis 2', 1.2, 1.2)
+text(-2.5, 4.2, 'LV', cex = 1.2, font = 2) #左上角添加'LV'
+group_plot(as.numeric(rv_cva_area$Axis_1), as.numeric(rv_cva_area$Axis_2), rv_cva_area$Area, col_area, pch_area, 'Axis 1', 'Axis 2', 1.2, 1.2)
+text(-9.3, 4, 'RV', cex = 1.2, font = 2) #左上角添加'RV'
+legend('bottomleft', legend = levels(as.factor(lv_cva_area$Area)), col = col_area, pch = pch_area, bty = 'n', cex = 0.8) #添加图例
+```
+
+&emsp;&emsp;C. danielopoli 和C. ilosvayi 成年雌性个体的CVA图解，可以看出存在地理上的种内形态差异。
+
+## 线性回归分析
+
+```{r}
+data_lv1_dan <- data_lv1[grep('dan',data_lv1$sex_instar), ] #筛选出类型为C dan数据
+data_lv1_ilo <- data_lv1[grep('ilo',data_lv1$sex_instar), ] #筛选出类型为C ilo数据
+data_rv1_dan <- data_rv1[grep('dan',data_rv1$sex_instar), ] #筛选出类型为C dan数据
+data_rv1_ilo <- data_rv1[grep('ilo',data_rv1$sex_instar), ] #筛选出类型为C ilo数据
+#画图
+par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
+group_plot(data_lv1$log_10, data_lv1$RW1, data_lv1$sex_instar, col, pch, 'log 10 centroid size', 'RW1', 1, 1)
+legend(3.21, 0.049, legend = levels(as.factor(data_lv1$sex_instar)), col = col, pch = pch, 
+bty = 'n', cex = 0.8) #添加图例
+abline(lm(data_lv1_dan$RW1 ~ data_lv1_dan$log_10), col = 'blue', lwd = 2) #添加趋势线
+abline(lm(data_lv1_ilo$RW1 ~ data_lv1_ilo$log_10), col = 'gray', lwd = 2) #添加趋势线
+text(3.61, 0.046, 'LV', cex = 1.2, font = 2) #左上角添加'LV'
+legend('bottomright', legend = c('C dan', 'C ilo'), bty = 'n', lty = 1, lwd = 2, cex = 0.8, col = c('blue', 'gray')) #添加图例
+legend(3.4, -0.03, legend = c('R^2(ilo)=0.621\nP<0.001', 'R^2(dan)=0.739\nP<0.001'), bty = 'n', cex = 0.8) 
+#添加R^2通过函数summary(lm(data_lv1_dan$RW1 ~ data_lv1_dan$log_10))查看R^2和P值
+group_plot(data_rv1$log_10, data_rv1$RW1, data_rv1$sex_instar, col, pch, 'log 10 centroid size', 'RW1', 1, 1)
+abline(lm(data_rv1_dan$RW1 ~ data_rv1_dan$log_10), col = 'blue', lwd = 2) #添加趋势线
+abline(lm(data_rv1_ilo$RW1 ~ data_rv1_ilo$log_10), col = 'gray', lwd = 2) #添加趋势线
+text(3.21, 0.085, 'RV', cex = 1.2, font = 2) #左上角添加'RV'
+legend(3.15, -0.02, legend = c('R^2(ilo)=0.647\nP<0.001', 'R^2(dan)=0.623\nP<0.001'), bty = 'n', cex = 0.8) #添加R^2
+```
+
+&emsp;&emsp;线性回归分析，横坐标是centroid size的对数值，纵坐标是RW1。
+
+# 本章汇总
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+data=read_excel("C:\\Users\\dell\\Desktop\\北大R语言\\2-7 种多型分析\\2-7 种多型分析参数.xlsx")
+kable(head(data ,9))
+```
+
+# 参考文献
+
+[1] Claudia Wrozyna,Thomas A. Neubauer,Juliane Meyer, Werner E Piller.Shape Variation in Neotropical Cytheridella (Ostracoda) Using Semilandmarks-Based Geometric Morphometrics: A Methodological Approach and Possible Biogeographical Implications[J].PLoS ONE 11(12): e0168438.doi:10.1371/journal.pone.0168438

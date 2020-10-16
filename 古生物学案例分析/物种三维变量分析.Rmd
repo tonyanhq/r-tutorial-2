@@ -1,0 +1,98 @@
+---
+title: "物种三维变量分析"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+  
+  <font size=4 face="微软雅黑">
+
+&emsp;&emsp;当生物的分析指标较为复杂时，二维变量能展示的信息少于三维变量的信息，借助三维变量的分析能更好刻画生物的三个变量之间的关系。以模拟的鸢尾花历史数据和某植物的生长数据为例进行三维分析。其中鸢尾花数据以生长规律进行描述，植物数据以分布占比进行刻画，分析角度如下：
+
+&emsp;&emsp;(1)当鸢尾花的萼片长度与萼片宽度同时发生变化，探究花瓣宽度的变化趋势。
+
+&emsp;&emsp;(2)当鸢尾花的萼片长度与花瓣长度同时发生变化，探究花瓣宽度的变化趋势。
+
+&emsp;&emsp;(3)根据各年植物记录时间与植物的年龄，描述存活植物生长的总数量占比情况。
+
+# 鸢尾花的花瓣宽度分析
+
+## 数据读取
+```{r}
+iris<-read.csv("C:\\Users\\Lenovo\\Desktop\\iris.csv")
+head(iris)
+```
+
+&emsp;&emsp;鸢尾花(iris)数据包含150种鸢尾花的信息，每50种取自三个鸢尾花种之一（setosa,versicolour或virginica)。每个花的特征用下面的5种属性描述萼片长度(Sepal.Length)、萼片宽度(Sepal.Width)、花瓣长度(Petal.Length)、花瓣宽度(Petal.Width)、类(Species)。
+
+
+
+## 萼片长度与萼片宽度探究
+
+```{r cars}
+#install.packages("scatterplot3d") # 安装加载三维散点图包
+
+attach(iris)  #绑定该数据集，下面直接输入变量名，不需要再输入data$变量名
+library(scatterplot3d) # 加载散点图包
+scatterplot3d(Sepal.Width,Petal.Length,Petal.Width,col.axis="blue", col.grid="lightblue")  # 用三个数值变量绘制散点图
+```
+
+
+&emsp;&emsp;上图表示花瓣长度与萼片宽度二者和花瓣宽度的趋势描述，可以看出随着萼片宽度和花瓣长度的增加，花瓣宽度也随之增加。
+
+## 萼片长度与花瓣长度探究
+
+&emsp;&emsp;下图表示萼片长度与萼片宽度二者和花瓣宽度的趋势描述，可以看出随着萼片长度度和花瓣长度的增加，花瓣宽度也随之增加。
+
+
+```{r,warning=FALSE}
+scatterplot3d(Sepal.Length,Sepal.Width,Petal.Width,col.axis="blue", col.grid="lightblue",color = "green")  # 用三个数值变量绘制散点图
+```
+
+&emsp;&emsp;通过对三者进行分析，可以得出花瓣的宽度是受到萼片长度，萼片宽度，花瓣长度所影响。
+
+# 植物年长数量占比分析
+
+&emsp;&emsp;存活年限是一个连续性的数值变量，植物界中有不同的年限的植物，为了形象展示出某地区下类植物的年限生长的层次分布，选择了面积图展示。下面数据已对年龄进行了分段，不同年限的植物已进行了相应的统计，分布如下所示：
+
+```{r}
+uspopage<-read.csv("C:\\Users\\Lenovo\\Desktop\\uspopage.csv")
+head(uspopage)
+```
+
+&emsp;&emsp;其中，数据指标共4个，X为序号，year为记录年，agegroup为年龄分组，Thousands为数量。
+
+
+```{r,warning=FALSE}
+#install.packages("rgl") #加载该包，绘制面积图
+library(ggplot2) # 加载该包渲染图层颜色
+library(gcookbook) #调用该包
+ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup)) + geom_area() # 绘制X和Y的图层面积
+```
+
+&emsp;&emsp;从上图可以看出，某地区在1900年到2000年间植物统计情况，小于5的植物数量分布高于其它植物的年龄分布，而60年以上的分布相对较低。
+
+
+# 本章汇总
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+data=read_excel("C:\\Users\\Lenovo\\Desktop\\teast\\packages.xlsx")
+kable(head(data))
+```
+
+# 参考文献
+
+[1] Westrop, S R.Trilobite systematics, biostratigraphy and palaeoecology of the lower ordovician komstad limestone and huk formations, southern Scandinavia[J].Earth-Science Reviews, 03/1997, 卷 42, 期 1-2
+
+[2]Daniel Goldman,Stig M,Bergström,H. David Sheets,Carolyn Pantle.A CONOP9 composite taxon range chart for Ordovician conodonts from Baltoscandia: a framework for biostratigraphic correlation and maximum-likelihood biodiversity analyses[J].GFF:Volume 136, 2014 - Issue 2
+
+[3]Junxuan Fan a,Qing Chen a, b, c,Michael J.Melchin b,H. David Sheets d.Quantitative stratigraphy of the Wufeng and Lungmachi black shales and graptolite evolution during and after the Late Ordovician mass extinction[J].Palaeogeography, Palaeoclimatology, Palaeoecology:Volume 389, 1 November 2013, Pages 96-114

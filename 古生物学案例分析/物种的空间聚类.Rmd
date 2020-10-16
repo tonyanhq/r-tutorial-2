@@ -1,0 +1,390 @@
+---
+title: "物种空间聚类"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+
+<font size=4 face="微软雅黑">
+
+# 聚类过程
+
+&emsp;&emsp;1) 数据准备:包括特征标准化和降维。
+
+&emsp;&emsp;2) 特征选择:从最初的特征中选择最有效的特征,并将其存储于向量中。
+
+&emsp;&emsp;3) 特征提取:通过对所选择的特征进行转换形成新的突出特征。
+
+&emsp;&emsp;4) 聚类(或分组):首先选择合适特征类型的某种距离函数(或构造新的距离函数)进行接近程度的度量; 而后执行聚类或分组。
+
+&emsp;&emsp;5) 聚类结果评估:是指对聚类结果进行评估.评估主要3 种，外部有效性评估、内部有效性评估和相关性测试评估.。
+
+# 聚类
+
+## 加载函数包
+
+<font size=4 face="微软雅黑">
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+library(ade4)
+library(vegan)  #应该先加载ade4后加载vegan以避免冲突
+library(gclus)
+library(cluster)
+library(RColorBrewer)
+library(labdsv)
+library(mvpart)
+library(MVPARTwrap) # MVPARTwrap这个程序包必须从本地zip文件安装
+```
+
+
+
+```{r}
+setwd('C:\\Users\\dell\\Desktop\\谈德林_物种空间聚类_20190624\\原始资料及数据') 
+# 导入CSV格式的数据
+spe <- read.csv("DoubsSpe.csv", row.names=1)
+env <- read.csv("DoubsEnv.csv", row.names=1)
+spa <- read.csv("DoubsSpa.csv", row.names=1)
+```
+
+&emsp;&emsp;以上数据读入后，分别用str，查看数据后，需要对异常情况的数据进行处理。
+
+```{r}
+# 剔除无物种数据的样方8
+spe <- spe[-8,]
+env <- env[-8,]
+spa <- spa[-8,]
+```
+
+## 单连接聚合聚类
+
+&emsp;&emsp;物种多度数据：先计算样方之间的弦距离矩阵，然后进行单连连接聚合聚类。
+
+```{r}
+spe.norm <- decostand(spe, "normalize")
+spe.ch <- vegdist(spe.norm, "euc")
+spe.ch.single <- hclust(spe.ch, method="single")
+```
+
+&emsp;&emsp;对单接聚合聚类的结果进行可视化，使用默认参数选项绘制聚类树，如下所示：
+
+```{r}
+plot(spe.ch.single)
+```
+
+&emsp;&emsp;通过上述图形可以看到，左侧的系数值显示，聚成2类的效果为0.8左右.说明9号物种和其它物种的差异较为明显，其它物种可能临近亲疏效果更好。
+
+
+## 完全连接聚合聚类
+
+```{r}
+spe.ch.complete <- hclust(spe.ch, method="complete")
+plot(spe.ch.complete)
+```
+
+&emsp;&emsp;完全连接对噪声和离群点不太敏感，但是它可能使大的簇破裂，并且偏好于球形。实现了组平均。组平均：定义簇邻近度为取自不同簇的所有点的平均逐对邻近度。
+
+## 计算UPGMA聚合聚类
+
+&emsp;&emsp; 这个UPGMA聚合聚类树是介于单连接聚类和完全连接聚类之间的一种聚类。
+
+```{r}
+spe.ch.UPGMA <- hclust(spe.ch, method="average")
+plot(spe.ch.UPGMA)
+```
+
+&emsp;&emsp; 用来重建系统发生树时 ,其假定的前提条件是:在进化过程中 ,每一世系发生趋异的次数相同 ,即核苷酸或氨基酸的替换速率是均等且恒定的。通过 UPGMA 法所产生的系统发生树可以说是物种树的简单体现 ,在每一次趋异发生后 ,从共祖节点到 2 个 OTU 间的支的长度一样。因此 ,这种方法较多地用于物种树的重建。 　　UPGMA 法在算法上较简单。聚类时 ,首先将距离最小的 2 个 OTU 聚在一起 ,并形成一个新的OTU ,其分支点位于 2 个 OTU 间距离的 1/ 2 处;然后计算新的 OTU 与其它 OTU 间的平均距离 ,再找出其中的最小 2 个 OTU 进行聚类;如此反复 ,直到所有的 OTU 都聚到一起 ,最终得到一个完整的系统发生树。
+
+## 形心聚类
+
+```{r}
+spe.ch.centroid <- hclust(spe.ch, method="centroid")
+plot(spe.ch.centroid)
+```
+
+&emsp;&emsp;该聚类通过一种翻转产生，Legendre 和Legendre解释了聚类树翻转如何产生，并建议用多分法（polychotomies），代替二分法（dichotomies）解读这种图。
+
+## Ward最小方差聚类
+
+&emsp;&emsp;最小化所有聚类内的平方差总和，使得下述物种间方差最小化的优化方向。
+
+```{r}
+spe.ch.ward <- hclust(spe.ch, method="ward")
+plot(spe.ch.ward)
+```
+
+&emsp;&emsp;使用距离平方造成此聚类树上半部分过于膨胀。为了使聚类树比例看起来更协调而不影响结构，可以使用当前融合水平的平方根重新绘图。如下所示：
+
+```{r}
+spe.ch.ward$height <- sqrt(spe.ch.ward$height)
+plot(spe.ch.ward)
+```
+
+# 聚类效果比较
+
+## 同表型相关
+
+&emsp;&emsp; 采用同表型相关，可以比较聚类结果的优劣，选择合适的聚类结果。
+
+```{r}
+spe.ch.single.coph <- cophenetic(spe.ch.single)
+cor(spe.ch, spe.ch.single.coph)
+```
+
+&emsp;&emsp; 单连接聚类同表型相关，得到系数值为0.599193。
+
+## 完全连接聚类同表型相关
+
+```{r}
+spe.ch.comp.coph <- cophenetic(spe.ch.complete)
+cor(spe.ch, spe.ch.comp.coph)
+```
+
+&emsp;&emsp;完全连接聚类同表型相关，得到系数值为0.7655628。
+
+## 平均聚类同表型相关
+
+```{r}
+spe.ch.UPGMA.coph <- cophenetic(spe.ch.UPGMA)
+cor(spe.ch, spe.ch.UPGMA.coph)
+```
+
+&emsp;&emsp;平均聚类同表型相关，得到系数值为0.8608326。
+
+
+
+## Ward聚类同表型相关
+
+```{r}
+spe.ch.ward.coph <- cophenetic(spe.ch.ward)
+cor(spe.ch, spe.ch.ward.coph)
+```
+
+&emsp;&emsp;Ward聚类同表型相关，得到系数值为0.7985079。
+
+&emsp;&emsp;综上，平均聚类同表型相关结果较好。
+
+
+##同表型相关spearman秩相关
+
+&emsp;&emsp;哪个聚类树保持与原始的弦距离矩阵最接近，则说明聚类效果较好。
+
+```{r}
+cor(spe.ch, spe.ch.ward.coph, method="spearman")
+```
+
+# 解读
+
+## Gower距离
+
+```{r}
+gow.dist.single <- sum((spe.ch-spe.ch.single.coph)^2)
+gow.dist.single
+```
+
+&emsp;&emsp;单一聚类和原始的弦距离矩阵的距离为95.41391
+
+```{r}
+gow.dist.comp <- sum((spe.ch-spe.ch.comp.coph)^2)
+gow.dist.comp
+```
+
+&emsp;&emsp;完全聚类和原始的弦距离矩阵的距离为40.48897
+
+```{r}
+gow.dist.UPGMA <- sum((spe.ch-spe.ch.UPGMA.coph)^2)
+gow.dist.UPGMA
+```
+
+&emsp;&emsp;UPGMA聚类和原始的弦距离矩阵的距离为11.6746
+
+```{r}
+gow.dist.ward <- sum((spe.ch-spe.ch.ward.coph)^2)
+gow.dist.ward
+```
+&emsp;&emsp;聚类和原始的弦距离矩阵的距离为532.0055。
+
+## 融合水平值图
+
+&emsp;&emsp;绘制单连接聚类融合水平值图，随着节点高度增加，聚类数量减少。
+
+## 单一连接水平值图
+```{r}
+plot(spe.ch.single$height, nrow(spe):2, type="S", main="融合水平值-弦距离-单连接",
+ ylab="k （聚类簇数量）", xlab="h (节点高度）", col="grey")
+text(spe.ch.single$height, nrow(spe):2, nrow(spe):2, col="red", cex=0.8)
+```
+
+## 完全连接水平值图
+
+```{r}
+plot(spe.ch.complete$height, nrow(spe):2, type="S", main="融合水平值-弦距离-完全连接",
+ ylab="k （聚类簇数量）", xlab="h (节点高度）", col="grey")
+text(spe.ch.complete$height, nrow(spe):2, nrow(spe):2, col="red", cex=0.8)
+```
+
+&emsp;&emsp;绘制完全连接聚类融合水平值图，随着节点高度增加，聚类数量减少。当节点高度为1.4时，聚类数量为2.
+
+## UPGMA聚类水平值图
+
+```{r}
+plot(spe.ch.UPGMA$height, nrow(spe):2, type="S", main="融合水平值-弦距离-UPGMA", 
+	ylab="k （聚类簇数量）", xlab="h (节点高度）", col="grey")
+text(spe.ch.UPGMA$height, nrow(spe):2, nrow(spe):2, col="red", cex=0.8)
+```
+
+&emsp;&emsp;绘制 UPGMA聚类融合水平值图，随着节点高度增加，聚类数量减少。当节点高度为1.2时，聚类数量为2.
+
+## Ward聚水平值图
+
+```{r}
+
+plot(spe.ch.ward$height, nrow(spe):2, type="S", main="融合水平值-弦距离-Ward", 
+	ylab="k （聚类簇数量）", xlab="h (节点高度）", col="grey")
+text(spe.ch.ward$height, nrow(spe):2, nrow(spe):2, col="red", cex=0.8)
+```
+
+&emsp;&emsp;绘制 Ward聚类融合水平值图，随着节点高度增加，聚类数量减少。当节点高度为2.0和2.5后，聚类数量为2.
+
+
+## 选择聚类簇的数量
+
+```{r}
+k <- 4
+cutg <- cutree(spe.ch.ward, k=k)
+#设定组数的最终聚类树
+# 函数reorder.hclust（）的作用是重新排列从函数hclust（）获得的聚类树，使
+# 聚类树内对象的排列顺序与原始相异矩阵内对象的排列顺序尽可能一致。重排
+# 不影响聚类树的结构。
+spe.chwo <- reorder.hclust(spe.ch.ward, spe.ch)
+# 绘制重排后带组标识的聚类树
+plot(spe.chwo, hang=-1, xlab="4 groups", sub="", ylab="Height", 
+	main="Chord - Ward (reordered)", labels=cutree(spe.chwo, k=k))
+rect.hclust(spe.chwo, k=k)
+```
+
+&emsp;&emsp;通过上述图形，得知最佳聚类数量为4.
+
+## 聚类树可视化
+
+&emsp;&emsp;使用自编函数hcoplot（）可以快速获得最终聚类树。能绘制带不同颜色的最终聚类树。
+
+## 自编函数绘制聚类树
+
+```{r}
+source("C:\\Users\\dell\\Desktop\\谈德林_物种空间聚类_20190624\\原始资料及数据\\hcoplot.R")	       # hcoplot.R脚本必须在当前工作目前下
+hcoplot(spe.ch.ward, spe.ch, k=4)
+
+```
+
+&emsp;&emsp;上述的参数hang=-1是设定聚类树的分支终端从0的位置开始，并且聚类簇的标识将在这个设定值之下.得到的聚类树。
+
+
+## 转化数据k-均值划分
+
+&emsp;&emsp;注意：即使给定的nstart相同，每次运行上述命令，所产生的结果也不一定
+完全相同，因为每次运算设定的初始结构是随机的。
+
+&emsp;&emsp; 以PAM分4组情况（partitioning around medoids，PAM）进行划分。
+
+```{r}
+spe.kmeans <- kmeans(spe.norm, centers=4, nstart=100)
+spe.kmeans 
+
+spe.ch.pam <- pam(spe.ch, k=4, diss=TRUE)#default for dist or dissimilarity
+summary(spe.ch.pam)
+```
+
+## k-均值划分与4个环境变量分析
+
+```{r}
+attach(env)
+# 定量环境变量箱线图
+# 海拔、坡度、氧含量和铵浓度
+par(mfrow=c(2,2))
+boxplot(sqrt(alt) ~ spe.kmeans$cluster, main="海拔", las=1, ylab="sqrt(alt)", col=2:5, varwidth=TRUE)
+boxplot(log(pen) ~ spe.kmeans$cluster, main="坡度", las=1, ylab="log(pen)", col=2:5, varwidth=TRUE)
+boxplot(oxy ~ spe.kmeans$cluster, main="氧含量", las=1, ylab="oxy", col=2:5, varwidth=TRUE)
+boxplot(sqrt(amm) ~ spe.kmeans$cluster, main="铵浓度", las=1, ylab="sqrt(amm)", col=2:5, varwidth=TRUE)
+```
+
+
+&emsp;&emsp;通过不同的k均值划分后，得到海拔、坡度、氧含量和铵浓度和环境变量之间的关系，如上所示。聚类类型为3的，海拔、坡度。含氧量都较高与其他聚类的类型。
+
+# 检验
+
+## 方差分析检验假设
+
+&emsp;&emsp;假设检验（Hypothesis Testing）是数理统计学中根据一定假设条件由样本推断总体的一种方法。
+
+## 检验残差的正态性
+
+```{r}
+shapiro.test(resid(lm(sqrt(alt) ~ as.factor(spe.kmeans$cluster))))
+shapiro.test(resid(lm(log(pen) ~ as.factor(spe.kmeans$cluster))))
+shapiro.test(resid(lm(oxy ~ as.factor(spe.kmeans$cluster))))
+shapiro.test(resid(lm(sqrt(amm) ~ as.factor(spe.kmeans$cluster))))
+```
+
+&emsp;&emsp;检验结果表明sqrt(alt)、log(pen)、oxy和sqrt(amm)的残差是正态分布。也尝试为其他的环境变量寻找好的标准化转化。
+
+## 检验方差齐性
+
+```{r}
+bartlett.test(sqrt(alt), as.factor(spe.kmeans$cluster))
+bartlett.test(log(pen), as.factor(spe.kmeans$cluster))
+bartlett.test(oxy, as.factor(spe.kmeans$cluster))
+bartlett.test(sqrt(amm), as.factor(spe.kmeans$cluster))
+```
+
+&emsp;&emsp;变量sqrt(alt)的方差不齐，所以参数检验的方差分析不适用。
+
+## 变量的方差分析
+
+```{r}
+summary(aov(log(pen) ~ as.factor(spe.kmeans$cluster)))
+summary(aov(oxy ~ as.factor(spe.kmeans$cluster)))
+summary(aov(sqrt(amm) ~ as.factor(spe.kmeans$cluster)))
+```
+
+&emsp;&emsp;从上述结果看出，坡度、含氧量和铵浓度在不同聚类簇之间是无显著性差异较为明显。
+
+## 变量alt的Kruskal-Wallis检验
+
+&emsp;&emsp; Kruskal-Wallis检验用来检测总体函数分布的一致性原假设和其替代假设，关于至少两个样本之间存在差异的假设。
+
+```{r}
+kruskal.test(alt ~ as.factor(spe.kmeans$cluster))
+```
+
+&emsp;&emsp;从上述看出，p值远小于0.05，说明海拔在不同聚类簇之间是无显著性差异较为明显。
+
+
+```{r}
+detach(env)
+```
+
+# 本章汇总
+***
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+data=read_excel("C:\\Users\\dell\\Desktop\\谈德林_物种空间聚类_20190624\\原始资料及数据\\聚类空间.xlsx")
+kable(head(data ,6))
+```
+
+# 参考文献
+***
+</font>
+
+&emsp;&emsp;[1] 赖江山译. 《数量生态学——R语言的应用》. 
+
+&emsp;&emsp;[2]https://www.jianshu.com/p/744d71f235c4
+
+

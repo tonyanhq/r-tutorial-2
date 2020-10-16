@@ -1,0 +1,93 @@
+---
+title: "时间序列趋势分析"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+
+<font size=4 face="微软雅黑">
+&emsp;&emsp;时间序列（或称动态数列）是指将同一统计指标的数值按其发生的时间先后顺序排列而成的数列。时间序列分析的主要目的是根据已有的历史数据对未来进行预测。
+
+# 数据读取
+
+&emsp;&emsp;数据加载过程中，数据中首行出现空格，R语言常再读取后识别成了list数据类型，因此在读取后需要转换数据的类型为dataframe
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+library(readxl)#加载包
+data=read_excel("C:\\Users\\Lenovo\\Desktop\\项目整合\\北大\\北大R语言\\Time series_diversity curve_mollusc\\data.xlsx")#读取数据
+data=as.data.frame(data)#建立数据框
+```
+
+&emsp;&emsp;森诺曼期/土伦期界限处的OAE与海生软体动物多样性的减少与绝灭速率的增加比白垩纪其他时期的更为严重。不同的生态选择对于OAE相关的多样性减少并无差别。
+
+# 多例样本分析趋势分析一
+
+&emsp;&emsp;在对样本的趋势差异变化进行分析比对，选择了MS，ss,UO三个参数进行趋势变化分析，如下图所示：
+
+```{r}
+plot(data$MS1,type="b",col="grey",lty=5,pch=2,xaxt="n",yaxt="n",ylim=c(-60,180),ylab="",cex.axis=0.5)
+par(new=T)
+plot(data$U01,type="b",col="green",lty=6,pch=19,xaxt="n",yaxt="n",ylim=c(-60,180),ylab="",cex.axis=0.5)
+par(new=T)
+plot(data$SS1,type="b",col="red",lty=1,pch=11,xaxt="n",yaxt="n",ylim=c(-60,180),cex.axis=0.5)
+text(1,40,"A")
+y=c(-40,-20,0,20,40,60,80,100,120,140,160,180)
+x=c(140,130,120,110,100,90,80,70)
+axis(2,y,cex.axis=0.8)    #设置Y轴坐标刻度
+axis(1, at = c(2,4,6,8,10,12,14,16),
+     labels = x )   #指定at位置设置X轴坐标刻度
+legend("bottomright",title="type",c("MS","SS","Uo"),lty=c(5,1,6),pch=c(2,11,19),col=c("grey","red","green"))
+
+```
+
+
+&emsp;&emsp;从上图可以看出，Uo的整体变化低于其它两种的变化。
+
+# 多例样本分析趋势分析二
+
+&emsp;&emsp;在对样本的趋势差异变化进行分析比对，选择了MS，ss,UO三个参数进行趋势变化分析，如下图所示：
+
+
+```{r}
+plot(data$MS2,type="b",col="grey",lty=5,pch=2,xaxt="n",yaxt="n",ylim=c(-60,260),ylab="",cex.axis=0.5)
+par(new=T)
+plot(data$U02,type="b",col="green",lty=6,pch=19,xaxt="n",yaxt="n",ylim=c(-60,260),ylab="",cex.axis=0.5)
+par(new=T)
+plot(data$SS2,type="b",col="red",lty=1,pch=11,xaxt="n",yaxt="n",ylim=c(-60,260),cex.axis=0.5)
+text(1,40,"A")
+y=c(-40,-20,0,20,40,60,80,100,120,140,160,180)
+x=c(140,130,120,110,100,90,80,70)
+axis(2,y,cex.axis=0.8)    #设置Y轴坐标刻度
+axis(1, at = c(2,4,6,8,10,12,14,16),
+     labels = x )   #指定at位置设置X轴坐标刻度
+legend("bottomright",title="type",c("MS2","SS2","Uo2"),lty=c(5,1,6),pch=c(2,11,19),col=c("grey","red","green"))
+
+```
+
+&emsp;&emsp;从上图可以看出，Uo的变化低于其它两种的变化。
+
+
+# 本章汇总
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+data=read_excel("C:\\Users\\Lenovo\\Desktop\\teast\\packages.xlsx")
+kable(head(data ,3))
+```
+
+# 参考文献
+[1] An analysis of the impacts of cretaceous oceanic anoxic events on global molluscan_diversity_dynamics [2019, Freymueller et al.Paleobiology]
+
+[2]https://blog.csdn.net/tandelin/article/details/99547342
+
+[3]The long term ecology and evolution of marine reptiles in a Jurassic seaway,2018, Foffa et al.Nature-ecology & evolution
+
+[4]Foffa et al.Nature ecology & evolution,supplementary.2018

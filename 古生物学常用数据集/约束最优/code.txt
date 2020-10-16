@@ -1,0 +1,53 @@
+###定量地层学-Graphic correlation图形相关
+Oslo <- c(0, 1, 0.9, 3.9, 4, 6, 0.3, 4)
+SE_Scania <- c(0.7, 6.2, 5, 5.2, 10.5, 12.5, 4.5, 13.1)
+Bornholm <- c(1, 2, 1, 1.1, 2.5, 3.1, 0, 4.1)
+Speci <- c('M.simon F', 'M.simon L', 'D.acut F', 'D.acut L', 'I.sarsi F', 'I.sarsi L', 'Cyrt F', 'Cyrt L')
+data <- data.frame(Speci = Speci, Oslo = Oslo, SE_Scania = SE_Scania, Bornholm = Bornholm) #生成数据框
+
+#画图
+par(mfrow = c(2, 2), mar = c(4, 4, 1, 1))
+plot(data$Oslo, data$SE_Scania, xlab = 'Oslo', ylab = 'SE Scania', ylim = c(0, 14), xlim = c(-3, 7), pch = 19, bty = 'l')
+abline(lm(data$SE_Scania ~ data$Oslo), col = 'black', lwd = 2) #添加趋势线
+text(data$Oslo + 0.5, data$SE_Scania - 0.5, data$Speci, cex = 0.8) #添加文字
+text(-2.75, 13.8, '(a)', cex = 1.5, font = 2) #左上角添加'(a)'
+plot(data$Oslo, data$SE_Scania, xlab = 'Oslo', ylab = 'SE Scania', ylim = c(0, 14), xlim = c(-3, 7), pch = 19, bty = 'l')
+abline(lm(data$SE_Scania ~ data$Oslo), col = 'black', lwd = 2) #添加趋势线
+text(data$Oslo + 0.5, data$SE_Scania - 0.5, data$Speci, cex = 0.8) #添加文字
+arrows(x0 = 0, y0 = 0.7, x1 = -1.4, y1 = 0.7, lwd = 2) ; arrows(x0 = 3.9, y0 = 5.2, x1 = 3.9, y1 = 9.4, lwd = 2) ; arrows(x0 = 4, y0 = 13.1, x1 = 6, y1 = 13.1, lwd = 2) #添加箭头
+text(-2.75, 13.8, '(b)', cex = 1.5, font = 2) #左上角添加'(b)'
+#计算Composite Oslo-Scania
+lm(data$SE_Scania ~ data$Oslo) # y = 3.092 + 1.64 * x (其中y为变量SE Scania,x为Oslo)
+Composite_Scania <- (data$SE_Scania - 3.092) / 1.64 
+Composite_Oslo_Scania <- c(Composite_Scania[1 : 3], Oslo[4 : 5], Composite_Scania[6 : 8]) #在图b中箭头为'↑'或'↓'值为Oslo(原始值),箭头为'←'或'→'值为Composite_Scania
+plot(Composite_Oslo_Scania, data$Bornholm, xlab = 'Composite Oslo-Scania', ylab = 'Bornholm', ylim = c(0, 4.5), xlim = c(-3, 8), pch = 19, bty = 'l')
+abline(lm(data$Bornholm ~ Composite_Oslo_Scania), col = 'black', lwd = 2) #添加趋势线
+text(Composite_Oslo_Scania + 0.5, data$Bornholm + 0.2, data$Speci, cex = 0.8) #添加文字
+text(-2.75, 4.3, '(c)', cex = 1.5, font = 2) #左上角添加'(c)'
+plot(Composite_Oslo_Scania, data$Bornholm, xlab = 'Composite Oslo-Scania', ylab = 'Bornholm', ylim = c(0, 4.5), xlim = c(-3, 8), pch = 19, bty = 'l')
+abline(lm(data$Bornholm ~ Composite_Oslo_Scania), col = 'black', lwd = 2) #添加趋势线
+text(Composite_Oslo_Scania + 0.5, data$Bornholm + 0.2, data$Speci, cex = 0.8) #添加文字
+arrows(x0 = -1.46, y0 = 1, x1 = -1.46, y1 = 0.15, lwd = 2) ; arrows(x0 = 0.86, y0 = 0, x1 = -1.65, y1 = 0, lwd = 2) ; arrows(x0 = 3.9, y0 = 1.1, x1 = 3.9, y1 = 2.3, lwd = 2)
+arrows(x0 = 1.9, y0 = 2, x1 = 3.1, y1 = 2, lwd = 2) ; arrows(x0 = 6.1, y0 = 4.1, x1 = 8.2, y1 = 4.1, lwd = 2)#添加箭头
+text(-2.75, 4.3, '(d)', cex = 1.5, font = 2) #左上角添加'(d)'
+
+
+###定量地层学-Constrained optimization约束最优
+conop_data <- read.csv('C:\\Documents and Settings\\Administrator\\桌面\\新建文件夹\\tail\\约束最优与图形相关\\conop_data.csv') #读取数据
+min <- apply(conop_data[, -1], 1, function(x) min(x, na.rm = TRUE)) #选出每行最小值
+max <- apply(conop_data[, -1], 1, function(x) max(x, na.rm = TRUE)) #选出每行最大值
+mm <- max - min #计算增量(每行最大值-每行最小值)
+min_mm <- matrix(c(min, mm),nrow=2, ncol=31, byrow=TRUE) #生产2行31列矩阵
+barplot(min_mm, xlab='', ylab='Height In Composite Section', col=c('white', 'gray'), border=NA, ylim = c(0, 2000))
+text(seq(0.8,37,1.2), max + 25, 1:31, cex = 0.6) 
+
+plot(conop_data$WangjiaWan.North.FAD, conop_data$WangjiaWan.South.FAD, xlim = c(200, 400), ylim = c(100, 250), pch = 19, xlab = 'WangjiaWan North', ylab = 'WangjiaWan South')
+par(new = TRUE)
+plot(conop_data$WangjiaWan.North.LAD, conop_data$WangjiaWan.South.LAD, xlim = c(200, 400), ylim = c(100, 250), pch = 3, xlab = '', ylab = '')
+x <- c(conop_data$WangjiaWan.North.FAD, conop_data$WangjiaWan.North.LAD)
+y <- c(conop_data$WangjiaWan.South.FAD, conop_data$WangjiaWan.South.LAD)
+dd <- data.frame(x = x, y = y) #生产数据框
+dd <- dd[complete.cases(dd), ] #删除有缺失值的行
+lines(lowess(dd$x, dd$y), col = 'red', lwd = 2) #添加趋势线
+
+

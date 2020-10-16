@@ -1,0 +1,302 @@
+
+---
+title: "探索性数据分析"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+  
+  <font size=4 face="微软雅黑">
+
+
+# 物种多样性概述
+
+***
+
+&emsp;&emsp;生物多样性是指在一定时间和一定地区所有生物（动物、植物、微生物）物种及其遗传变异和生态系统的复杂性总称。生物多样性包括遗传多样性、物种多样性和生态系统多样性。物种多样性包括两个方面，其一是指一定区域内的物种丰富程度，可称为区域物种多样性；
+
+&emsp;&emsp; 在一定区域下，物种数量分布维度较多，需要对多物种数据进行统一分析。以下从对物种数据进行处理和探索性分析。对区域的物种多样性进行衡量，流程如下：
+
+
+<div align=center>
+![ ](C:\\Users\\dell\\Desktop\\北大R语言\\王世拓_汇总_20191029\\王世拓_探索性数据分析_20190624\\原始资料和数据\\物种多样性分析.png)
+</div>
+
+&emsp;&emsp;
+
+&emsp;&emsp;由上图的物种多样性流程，先对数据进行导入，将物种数据中的缺失值数据进行剔除，再统一物种数据的指标量纲，对多物种数据进行刻画描述，最后计算物种多样性指标和物种丰富度。
+
+## 物种多样性分析
+***
+
+## 物种数据的导入
+
+&emsp;&emsp;对物种数据进行获取，将物种数据在环境和空间对应的数据进行读取。如下：
+
+```{r}
+setwd('C:\\Users\\dell\\Desktop\\北大R语言\\王世拓_汇总_20191029\\王世拓_探索性数据分析_20190624\\原始资料和数据')  # 设置数据的存放路径
+spe <- read.csv("DoubsSpe.csv", row.names=1)  # 读取物种的种类数据
+str(spe)
+env <- read.csv("DoubsEnv.csv", row.names=1)  # 读取物种的环境数据
+str(env)
+spa <- read.csv("DoubsSpa.csv", row.names=1)  # 读取物种的空间位置数据
+str(spa)
+```
+
+&emsp;&emsp;通过str函数，可以看到物种的数据的样本数量构成，其中spe数据中共有30个样本，27个变量。而数据中不存在量纲不统一，直接对数据进行展示。
+
+## 物种数据的展示
+
+&emsp;&emsp;下述对物种的种类数据前6行数据进行输出，输出物种的指标名称有："CHA" "TRU" "VAI" "LOC" "OMB" "BLA" "HOT" "TOX" "VAN" "CHE" "BAR""SPI" "GOU" "BRO" "PER" "BOU" "PSO" "ROT" "CAR" "TAN" "BCO" "PCH" "GRE" "GAR" "BBO" "ABL" "ANG"
+
+```{r}
+head(spe) # 只展示前5行和前10列
+colnames(spe)  # 输出物种种类的物种名称
+```
+
+```{r setup, include=FALSE}
+library(Hmisc)
+```
+
+&emsp;&emsp;对物种的种类数据进行描述统计量分析，其中，返回变量和观测的数量，缺失值和唯一值的数目，平均值，分位数，以及数据中五个最大的值和五个最小的值的频次及占比。下述中数据量少，只展示出4个不同类型的值。
+
+```{r}
+describe(spe) #物种描述统计量分析
+```
+
+&emsp;&emsp;对物种的种类数据spe进行范围查找： 0 到5
+
+```{r}
+range(spe)  # 整个多度数据值的范围
+```
+
+&emsp;&emsp;对物种的种类数据进行统计0 到5之间的样本数量。
+
+```{r}
+number_type <- table(unlist(spe))  # 计算每种多度值的数量
+print(number_type)
+```
+
+&emsp;&emsp;对物种的种类数据进行统计0 到5之间的频数展示。
+
+```{r}
+barplot(number_type, las=1, xlab="多度等级", ylab="频度", col=gray(5:0/5))  # 所有种混和在一起的多度分布柱状图
+```
+
+&emsp;&emsp;通过barplot图可以看出，多度值为0的数据占比最多，其次是多度值为1的数据，多度值为4的数据占比最少。查看多度数据中0值所占比例，如下：
+
+```{r}
+sum(spe==0)  # 多度数据中0值的数量
+sum(spe==0) / (nrow(spe)*ncol(spe))  # 多度数据中0值所占比例
+```
+
+
+## 样方分布可视化
+
+
+```{r}
+plot(spa, asp=1, type="n", main="样方位置",
+  xlab="x坐标 (km)", ylab="y坐标 (km)")  # 1.生成空的绘图窗口（横纵坐标轴比例1:1 (参数asp)，带标题 ; 2.从spa数据框获取地理坐标x和y
+lines(spa, col="light blue")  # 加一条连接各个样方点的蓝色线（代表Doubs河）
+text(spa, row.names(spa), cex=0.8, col="red")  # 添加每个样方的编号
+text(70, 10, "上游", cex=1.2, col="red")  # 添加文本
+text(20, 120, "下游", cex=1.2, col="red")  # 添加文本
+```
+
+&emsp;&emsp;从图中可以看出，样方在下游分布最多，在上游分布最少。
+
+
+&emsp;&emsp;计算每个物种出现的样方数，按照升序的方式重新排列。
+```{r}
+spe.pres <- apply(spe > 0, 2, sum)  # 按列进行计数，因此函数apply()第二个参数MARGIN应该设定为2
+sort(spe.pres)  # 按照升序的方式重新排列结果
+```
+&emsp;&emsp;对各物种的频度百分比进行计算。
+```{r}
+spe.relf <- 100*spe.pres/nrow(spe)  # 计算频度百分比
+round(sort(spe.relf), 1)  # 设置排列结果为1位小数
+```
+&emsp;&emsp;对各物种的出现次数和占比进行计算如下
+```{r}
+par(mfrow=c(1,2))    # 将绘图窗口垂直一分为二
+hist(spe.pres, main="物种出现数", right=FALSE, las=1,
+  xlab="出现数", ylab="物种数量",
+  breaks=seq(0,30,by=5), col="bisque")  # 绘柱状图
+hist(spe.relf, main="物种相对频度", right=FALSE, las=1,
+  xlab="出现率(%)", ylab="物种数量",
+  	breaks=seq(0, 100, by=10), col="bisque")  # 绘柱状图
+```
+
+&emsp;&emsp;从物种出现数图中可以看出，大部分物种的出现次数在10-15次，其次是15-20次，出现次数为0-5的物种没有。
+
+
+&emsp;&emsp;从物种相对频度图中可以看出，出现率40%-50%的物种数量最多，达到7种，其次是出现率30%-40%的物种数量是6种，出现率0%-20%以及出现率70%-80%的物种数量为0。
+
+
+## 样方比较：物种丰富度
+
+```{r}
+sit.pres <- apply(spe > 0, 1, sum)  # 以行汇总，apply()函数第二个参数MARGIN应该设定为1
+sort(sit.pres)  # 按照升序的方式重新排列结果
+par(mfrow=c(1,2))  #将绘图窗口垂直一分为二
+plot(sit.pres,type="s", las=1, col="gray",
+	main="物种丰富度-上下游的梯度",
+	xlab="样方沿着河流的位置", ylab="物种丰富度")  # 绘制样方沿着河流的分布位置和所含物种丰富度
+text(sit.pres, row.names(spe), cex=.8, col="red")
+plot(spa, asp=1, main="物种丰富度地图", pch=21, col="white",
+	bg="brown", cex=5*sit.pres/max(sit.pres), xlab="x坐标 (km)",
+	ylab="y坐标 (km)")  # 使用地理坐标绘制气泡地图
+lines(spa, col="light blue")
+```
+
+&emsp;&emsp;从图中可以看出，上游物种丰富度最低，上游及中游物种丰富度最高。
+
+## 计算生物多样性指数
+
+```{r,warning=FALSE}
+library(vegan)  # 载入所需要的vegan程序包(如果未载入，需要执行这一步)
+```
+```{r}
+N0 <- rowSums(spe > 0)  # 物种丰富度
+H <- diversity(spe)  # Shannon熵指数
+N1 <- exp(H)  # Shannon 多样性指数
+N2 <- diversity(spe, "inv")  # Simpson多样性指数
+J <- H/log(N0)  # Pielou 均匀度
+E1 <- N1/N0  # Shannon均匀度 (Hill比率)
+E2 <- N2/N0  # Simpson均匀度 (Hill比率)
+div <- data.frame(N0, H, N1, N2, E1, E2, J)
+div
+```
+
+# 案例：鱼类物种多样性分析
+
+## 某些鱼类的分布地图
+
+```{r}
+par(mfrow=c(2,2))  # 将绘图窗口分割为4个绘图区域，每行两个
+plot(spa, asp=1, col="brown", cex=spe$TRU, main="褐鳟",
+  xlab="x坐标 (km)", ylab="y坐标 (km)")
+lines(spa, col="light blue")
+plot(spa, asp=1, col="brown", cex=spe$OMB, main="茴鱼",
+	xlab="x坐标 (km)", ylab="y坐标 (km)")
+lines(spa, col="light blue")
+plot(spa, asp=1, col="brown", cex=spe$BAR, main="鲃鱼",
+	xlab="x坐标 (km)", ylab="y坐标 (km)")
+lines(spa, col="light blue")
+plot(spa, asp=1, col="brown", cex=spe$BCO, main="欧鳊",
+xlab="x坐标 (km)", ylab="y坐标 (km)")
+lines(spa, col="light blue")
+```
+
+&emsp;&emsp;从图中可以看出，不同的鱼类在空间分布存在差异。褐鳟分布在河流的上游及中游，茴鱼分布在河流的中游，鲃鱼和欧鳊分布在河流的中游及下游。
+
+## 数据的标准化
+
+```{r}
+spe[1:5, 2:4]  # 显示原始数据某一部分（多度数据）
+spe.pa <- decostand(spe, method="pa")  # 将多度数据转化为有-无（1-0）数据
+spe.pa[1:5, 2:4]
+
+#物种水平：两个方法；
+# 通过每个数值除以该物种最大值标准化多度
+# 注意：这里参数MARGIN=2（默认值）
+spe.scal <- decostand(spe, "max")
+spe.scal[1:5,2:4]
+apply(spe.scal, 2, max)  # 计算每列最大值
+# 通过每个数值除以该物种总和去标准化多度（每个物种的相对多度）
+# 注意：这里需要设定参数MARGIN=2
+spe.relsp <- decostand(spe, "total", MARGIN=2)
+spe.relsp[1:5,2:4]
+apply(spe.relsp, 2, sum)  # 计算标准化后数据每列总和
+
+# 样方水平：3种方法；有-无数据或多度数据
+# 通过每个数值除以该样方总和标准化多度（每个样方相对多度或相对频度）
+# 注意：这里参数MARGIN=1（默认值）
+spe.rel <- decostand(spe, "total")  # 默认MARGIN=1
+spe.rel[1:5,2:4]
+# 计算标准化后数据每列总和以检验标准化的过程是否正确
+apply(spe.rel, 1, sum)
+# 赋予每个行向量长度（范数）为1（即平方和为1）
+spe.norm <- decostand(spe, "normalize")
+spe.norm[1:5,2:4]
+# 验证每个行向量的范数
+norm <- function(x) sqrt(x%*%x)
+apply(spe.norm, 1, norm) 
+# 计算相对频度（样方层面），然后取平方根
+spe.hel <- decostand(spe, "hellinger")
+spe.hel[1:5,2:4]
+apply(spe.hel, 1, norm)  # 计算标准化后数据每行向量的范数
+
+# 物种和样方同时标准化
+# 卡方转化：除以行和及列和的平方根
+spe.chi <- decostand(spe, "chi.square")
+spe.chi[1:5,2:4]
+# 请查看没有物种的样方8转化后将会怎样
+spe.chi[7:9,]
+# Wisconsin标准化：多度数据首先除以该物种最大值后再除
+#以该样方总和
+spe.wis <- wisconsin(spe)
+spe.wis[1:5,2:4]
+```
+
+
+## 部分环境变量图
+
+```{r}
+#部分环境变量的气泡地图
+par(mfrow=c(2,2))
+plot(spa, asp=1, main="海拔", pch=21, col="white", bg="red",
+  cex=5*env$alt/max(env$alt), xlab="x", ylab="y")
+lines(spa, col="light blue")
+plot(spa, asp=1, main="流量", pch=21, col="white", bg="blue",
+  cex=5*env$deb/max(env$deb), xlab="x", ylab="y")
+lines(spa, col="light blue")
+plot(spa, asp=1, main="氧含量", pch=21, col="white", bg="green3",
+	cex=5*env$oxy/max(env$oxy), xlab="x", ylab="y")
+lines(spa, col="light blue")
+plot(spa, asp=1, main="硝酸盐浓度", pch=21, col="white", bg="brown",
+	cex=5*env$nit/max(env$nit), xlab="x", ylab="y")
+lines(spa, col="light blue")
+#线条图
+par(mfrow=c(2,2))
+plot(env$das, env$alt, type="l", xlab="离源头距离 (km)",
+  ylab="海拔 (m)", col="red", main="海拔")
+plot(env$das, env$deb, type="l", xlab="离源头距离 (km)",
+  ylab="流量 (m3/s)", col="blue", main="流量")
+plot(env$das, env$oxy, type="l", xlab="离源头距离 (km)",
+	ylab="氧含量 (mg/L)", col="green3", main="氧含量")
+plot(env$das, env$nit, type="l", xlab="离源头距离 (km)",
+	ylab="硝酸盐浓度 (mg/L)", col="brown", main="硝酸盐浓度")
+```
+
+&emsp;&emsp;从部分环境变量的气泡地图和线条图中可以看出，环境变量在空间分布存在差异。结合图——某些鱼类的分布地图可以得出一个猜想，即环境变量对不同的鱼类在空间分布有影响，后续可以通过相关性分析来得出准确的结论。
+
+
+```{r,fig.show='hide'}
+# 所有变量对之间的二维散点图
+source("C:\\Users\\dell\\Desktop\\北大R语言\\王世拓_汇总_20191029\\王世拓_探索性数据分析_20190624\\原始资料和数据\\panelutils.R")  # 载入自编的函数R脚本 ; panelutils.R脚本文件必须与当前R工作空间在同一文件夹下
+pairs(env, panel=panel.smooth, diag.panel=panel.hist,
+  main="双变量散点图（带频度分布图和平滑曲线）")  # 带频度分布的柱状图和光滑拟合曲线的双变量散点图
+
+```
+
+<div align=center>
+![ ](C:\\Users\\dell\\Desktop\\北大R语言\\王世拓_汇总_20191029\\王世拓_探索性数据分析_20190624\\原始资料和数据\\双变量散点图.png)
+</div>
+
+# 本章汇总
+<font size=4 face="微软雅黑">
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+data=read_excel("C:\\Users\\dell\\Desktop\\北大R语言\\王世拓_汇总_20191029\\王世拓_探索性数据分析_20190624\\原始资料和数据\\多样性分析参数.xlsx")
+kable(head(data ,9))
+```

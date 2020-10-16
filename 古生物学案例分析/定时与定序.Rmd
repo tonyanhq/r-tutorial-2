@@ -1,0 +1,81 @@
+﻿---
+title: "定时与定序分析"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+  
+  <font size=4 face="微软雅黑">
+
+
+
+&emsp;&emsp;定序和定时法（Ranking scaling）是定量地层学的常见方法之一。该方法搜集不同类群生物的首现、末现或富集层位，并以同一事件在各剖面中出现的平均位置为基准，确定各生物事件的先后顺序。
+
+&emsp;&emsp;将测井实际数据与“标准”层序对比的结果，可发现不同测井中出现的倒转现象。
+
+
+# 频数分析
+
+```{r}
+setwd("C:\\Users\\Lenovo\\Desktop\\order")
+library(readxl)  # 调取readxl包读取excel文件
+data=read_excel("data1.xlsx")
+data=as.data.frame(data) # 转换数据list为dataframe
+head(data) 
+plot(data$Optimal,data$Depth) # 绘制散点图形 
+text(data$Optimal-0.3,data$Depth,data$time,xlab="",ylab="")  # 给散点图形添加标签
+
+```
+
+
+
+
+# 相似差异
+
+
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+library(factoextra)
+library(readxl)
+data2=read_excel("C:\\Users\\Lenovo\\Desktop\\order\\Rank_scaling_foraminifera.xlsx")
+data2=as.data.frame(data2) # 转换数据框
+head(data2)
+result <- dist(data2, method = "euclidean") # 进行欧式距离计算
+
+result_hc <- hclust(d = result, method = "ward.D2") # 用欧式距离进行聚类
+
+fviz_dend(result_hc, cex = 0.6,horiz=TRUE,show_labels = TRUE) # 对欧式距离的结果
+
+```
+
+
+&emsp;&emsp;首先对生物事件的顺序进行排序。从低到高（1-10）排列位置（Position），并重新确定不同生物事件（Event）之间的先后顺序。区间（Range）表示该事件在该位置的不确定性。
+
+&emsp;&emsp;第二步判断不同生物事件之间的间距。事件的顺序列于左侧，相连事件的时间间隔列于右侧。
+
+&emsp;&emsp; 第三步，将每个测井的数据与得到的“标准”序列进行对比。如图中例子，该测井中的事件3和事件2，事件10和事件9之间均出现了倒转。
+
+
+# 本章汇总
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+data=read_excel("C:\\Users\\Lenovo\\Desktop\\order\\packages.xlsx")
+kable(head(data ,3))
+```
+
+# 参考文献
+
+[1] https://blog.csdn.net/tandelin/article/details/99547342
+
+[2]-The long-term ecology and evolution of marine reptiles in a Jurassic seaway,2018, Foffa et al.-Nature-ecology & evolution
+
+[3]Foffa et al.-Nature ecology & evolution,supplementary-2018

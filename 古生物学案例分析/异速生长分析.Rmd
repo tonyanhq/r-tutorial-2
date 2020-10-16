@@ -1,0 +1,174 @@
+---
+title: "2-1 异速生长分析"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+  
+  <font size=4 face="微软雅黑">
+  
+# 基本概念
+
+&emsp;&emsp;生物在个体发育的不同阶段，其不同器官的生长速率其实是存在差异的。以人类为例，婴儿时期脑部的发育速度最快，这使得人类婴儿的头部相对身体而言显得很大；而随着年龄的增长，四肢的发育速度加快，并在青春期之后使得全身的比例变得协调。
+
+&emsp;&emsp;在古生物学中，对于异速生长的研究一方面有助于理解某一类生物的生长发育历史，另一方面也有助于从定量化的角度更准确地认识化石物种在形态上的差异。
+
+# 案例
+
+## 案例介绍
+
+&emsp;&emsp;性双型现象在古生物中强调得并不多，但是由于胡氏贵州龙的标本数量十分巨大，性双型现象较为明显。性双型现象的本质，其实仍然是异速生长，相当于器官的发育随年龄和性别产生了不等速的发育。但是胡氏贵州龙的性双型从何时开始？是从一出生就有所差异，还是在生长发育过程中出现的？具体在那个阶段产生性双型现象？本研究对此展开了研究。
+
+```{r}
+library(MASS) #加载MASS包,用于fisher判别
+library(readxl) #加载包readxl包,用于读取excel数据
+library(ggplot2) #加载ggplot2包,用于绘制直方图
+library(car) #加载car包,用于绘制置信椭圆
+```
+
+## 读取数据
+```{r}
+data <- read_excel('C:\\Users\\dell\\Desktop\\北大R语言\\2-1 异速生长分析\\Allometry_keichousaurus.xlsx')
+str(data)
+```
+
+&emsp;&emsp;本案例共有107条数据，17个变量。第2列到第15列变量类型应该为数值型，然而除了变量fm.l，其余的变量都是字符串型，而且还存在缺失值。变量Gender.1的类型应该是因子型。
+
+## 数据清洗
+```{r}
+for (i in 2:15){
+data <- data[grepl('–', unlist(data[, i])) == FALSE, ] #找出第i列数据中含有'-'行,并剔除该行数据
+data[, i] <- as.numeric(unlist(data[, i])) #将第i列数据由字符串型改为数值型
+}
+names(data)[c(1,16:17)] <- c('Number.item', 'Gender.1', 'Gender.2') #变量重命名
+data$Gender.1 <- as.factor(data$Gender.1) #将变量Gender.1类型改为因子型
+str(data)
+```
+
+&emsp;&emsp;通过for循环，第2列到第15列的变量类型变为数字型，缺失值也被剔除。清洗后的数据共有76条数据，17个变量。
+
+## 线性判别分析（LDA）
+
+&emsp;&emsp;线性判别分析是一种经典的线性学习方法，在二分类问题上最早由Fisher在1936年提出，亦称Fisher线性判别。
+
+&emsp;&emsp;线性判别的思想非常朴素：给定训练样例集，设法将样例投影到一条直线上，使得同类样例的投影点尽可能接近，异样样例的投影点尽可能远离；在对新样本进行分类时，将其投影到同样的直线上，再根据投影点的位置来确定新样本的类别。
+
+```{r}
+ld <- lda(Gender.1~.-Number.item-Gender.1-Gender.2, data = data) #建立fisher模型
+pre <- predict(ld, data) #通过fisher模型对数据进行预测
+```
+
+&emsp;&emsp;建立线性判别分析（LDA）模型，并对原始数据进行预测。
+
+```{r,warning=FALSE}
+hisdata <- data.frame(sex = ifelse(pre$posterior[,2] > 0.5, 'M', 'F'), pre$x) #建立数据框,pre$posterior[,2]>0.5的性别为M否则性别为F
+ggplot(hisdata, aes(x = LD1, fill = sex)) +
+labs(title = '', x='Linear discriminant analysis 1', y='Frequency') +
+geom_histogram(position = 'identity', colour = 'black')
+```
+
+&emsp;&emsp;从线性判别分析的结果上看，已有的判别方式可以有效地对胡氏贵州龙的性别进行区分，但是由于亚成年个体的性别比例差异太大，鉴定结果可能不一定准确。
+
+##主成分分析
+
+&emsp;&emsp;在用统计分析方法研究多变量的课题时，变量个数太多就会增加课题的复杂性。人们自然希望变量个数较少而得到的信息较多。在很多情形，变量之间是有一定的相关关系的，当两个变量之间有一定相关关系时，可以解释为这两个变量反映此课题的信息有一定的重叠。主成分分析是对于原先提出的所有变量，将重复的变量（关系紧密的变量）删去多余，建立尽可能少的新变量，使得这些新变量是两两不相关的，而且这些新变量在反映课题的信息方面尽可能保持原有的信息。
+
+```{r}
+data.pr <- princomp(data[, 2:15], cor = T) #对2-15列进行主成分分析
+summary(data.pr, loadings = T)
+```
+
+&emsp;&emsp;Proportion of Variance为方差贡献率;Cumulative Proportion为累计方差贡献率。可以看出第1主成分的方差贡献率是89.12%，第2主成分的方差贡献率是3.96%。第1主成分和第2主成分的累计方差贡献率为93.07%。Loadings中的矩阵分别对应主成分与各样本之间的系数关系。
+
+```{r}
+pca_data <- predict(data.pr)
+head(pca_data) 
+```
+
+&emsp;&emsp;各样本的主成分的值
+
+```{r}
+dataEllipse(x = pca_data[which(data$Gender.1 == 'F'), 1], y = pca_data[which(data$Gender.1 == 'F'), 2], levels = 0.95,xlab = 'Factor 1', ylab = 'Factor 2', col = 'blue', pch = 1, xlim = c(-10, 10), ylim = c(-2, 2), center.pch = FALSE) 
+par(new=TRUE)
+dataEllipse(x = pca_data[which(data$Gender.1 != 'F'), 1], y = pca_data[which(data$Gender.1 != 'F'), 2], levels = 0.70,xlab = '', ylab = '', col = 'red', pch = 4, xlim = c(-10, 10), ylim = c(-2, 2), center.pch = FALSE)
+legend('topleft', legend = c('female', 'male'), col = c('blue', 'red'), pch = c(1, 4), bty = "n") #添加图例
+```
+
+&emsp;&emsp;从EFA的结果上看，胡氏贵州龙在体长（Factor 1）和性别（Factor 2）两个维度上的形态差异最大，而体形与年龄呈线性的正相关关系。所以，年龄与性别对胡氏贵州龙的形态影响最大。
+
+## 协方差分析（ANCOVA）
+
+&emsp;&emsp;协方差分析亦称“共变量（数）分析”。方差分析的引申和扩大。基本原理是将线性回归与方差分析结合起来，调整各组平均数和 F 检验的实验误差项，检验两个或多个调整平均数有无显著差异，以便控制在实验中影响实验效应（因变量）而无法人为控制的协变量（与因变量有密切回归关系的变量）在方差分析中的影响。例如，在研究某种教学方法（实验变量）对学业成绩（实验效应）的影响时，被试的原有知识基础同时影响学业成绩，但往往在实验中难以选取具备相同知识基础的被试参加实验，可用协方差分析从学业成绩的总变异中将归因于被试知识基础差异的部分划分出去，便于确切地分析教学方法对学业成绩的影响，其中被试的知识基础就是协变量。
+
+```{r}
+names(data)[4] <- 's.v.l' #变量's-v.l'名改为's.v.l' 
+data_f <- data[which(data$Gender.1 == 'F'), ] #筛选出性别为F的数据 
+data_m <- data[which(data$Gender.1 == 'M'), ] #筛选出性别为M的数据
+
+par(mfrow = c(2, 2), mar = c(4, 4, 1, 1))
+#图A
+plot(x = data_f$s.v.l, y = data_f$hm.l, xlim = c(0, 250), ylim = c(0, 30), pch = 1,
+col = 'blue', xlab = 'Snout-vent length (mm)' , ylab = 'Humerus length (mm)')
+abline(lm(data_f$hm.l~data_f$s.v.l), col = 'blue', lwd = 2, h = , v = ) #添加趋势线
+par(new = TRUE)
+plot(x = data_m$s.v.l, y = data_m$hm.l, xlim = c(0, 250), ylim = c(0, 30), pch = 4,
+col = 'red', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n')
+abline(lm(data_m$hm.l~data_m$s.v.l), col = 'red', lwd = 2) #添加趋势线
+legend(0, 28, legend = c('female', 'male'), col = c('blue', 'red'), pch = c(1, 4), bty = "n") #添加图例
+text(15, 29, 'A', cex = 1.5, font = 2) #左上角添加'A'
+#图B
+plot(x = data_f$s.v.l, y = data_f$fm.l, xlim = c(0, 250), ylim = c(0, 25), pch = 1,
+col = 'blue', xlab = 'Snout-vent length (mm)' , ylab = 'Femur length (mm)')
+abline(lm(data_f$fm.l~data_f$s.v.l), col = 'blue', lwd = 2, h = , v = ) #添加趋势线
+par(new = TRUE)
+plot(x = data_m$s.v.l, y = data_m$fm.l, xlim = c(0, 250), ylim = c(0, 25), pch = 4,
+col = 'red', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n')
+abline(lm(data_m$fm.l~data_m$s.v.l), col = 'red', lwd = 2) #添加趋势线
+text(15, 24, 'B', cex = 1.5, font = 2) #左上角添加'B'
+#图C
+plot(x = data_f$fm.l, y = data_f$hm.l, xlim = c(0, 25), ylim = c(0, 30), pch = 1,
+col = 'blue', xlab = 'Femur length (mm)' , ylab = 'Humerus length (mm)')
+abline(lm(data_f$hm.l~data_f$fm.l), col = 'blue', lwd = 2, h = , v = ) #添加趋势线
+par(new = TRUE)
+plot(x = data_m$fm.l, y = data_m$hm.l, xlim = c(0, 25), ylim = c(0, 30), pch = 4,
+col = 'red', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n')
+abline(lm(data_m$hm.l~data_m$fm.l), col = 'red', lwd = 2) #添加趋势线
+text(1, 29, 'C', cex = 1.5, font = 2) #左上角添加'C'
+#图D
+plot(x = data_f$hm.m, y = data_f$hm.d, xlim = c(0, 5), ylim = c(0, 9), pch = 1,
+col = 'blue', xlab = 'Humerus mid-shaft width (mm)' , ylab = 'Humerus distal width (mm)')
+abline(lm(data_f$hm.d~data_f$hm.m), col = 'blue', lwd = 2, h = , v = ) #添加趋势线
+par(new = TRUE)
+plot(x = data_m$hm.m, y = data_m$hm.d, xlim = c(0, 5), ylim = c(0, 9), pch = 4,
+col = 'red', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n')
+abline(lm(data_m$hm.d~data_m$hm.m), col = 'red', lwd = 2) #添加趋势线
+text(0.2, 8.5, 'D', cex = 1.5, font = 2) #左上角添加'D'
+```
+
+&emsp;&emsp;协方差分析（ANCOVA）对异速生长的解释。胡氏贵州龙在肱骨/吻臀长度比（图a）、股骨/吻臀长度比（图b）、肱骨/股骨长度比（图c）和肱骨远端宽/肱骨中轴宽度比（图d）四项比列上均体现了雌雄的差异（处在不同的回归线上），但是肱骨远端宽/肱骨中轴宽度的比例从一开始就出现了分离，表明胡氏贵州龙在这一指标的上的差异，可以倒追回胚胎期。换言之，胡氏贵州龙肱骨远端的宽度自出生起就存在着性别的差异。
+
+# 本章汇总
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+data=read_excel("C:\\Users\\dell\\Desktop\\北大R语言\\2-1 异速生长分析\\2-1 异速生长分析参数.xlsx")
+kable(head(data ,9))
+```
+
+# 参考文献
+
+[1] Xue, Y., Jiang, D., Motani, R., Rieppel, O., Sun, Y., Sun, Z., Ji, C., and Yang, P. New information on sexual dimorphism and allometric growth in Keichousaurus hui, a pachypleurosaur from the Middle Triassic of Guizhou, South China[J].Acta Palaeontologica Polonica 60 (3): 681–687.2015
+
+[2] https://baike.baidu.com/item/线性判别分析/22657333
+
+[3] https://baike.baidu.com/item/主成分分析
+
+[4] https://baike.baidu.com/item/协方差分析

@@ -1,0 +1,97 @@
+---
+title: "系统发育树"
+output: 
+  html_document:
+    number_sections: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: show
+    fig_width: 7
+    fig_height: 4.5
+    theme: united
+    highlight: tango
+---
+<font size=4 face="微软雅黑">
+&emsp;&emsp;系统发育树又名分子进化树，是生物信息学中描述不同生物之间相关关系的方法。通过系统学分类分析，可以帮助了解生物的进化历史过程。
+
+&emsp;&emsp;主要分为有根树和无根树，有根树是有方向的树，包含唯一的节点，将其作为树中所有物种的共同祖先，反映了树上物种或基因的时间顺序。无根树只是指明了种属的相互关系，没有确认共同祖先或进化途径。
+
+# 加载包
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+#install.packages("MASS")
+#install.packages("cluster")
+#install.packages("mgcv")
+#install.packages("ape")
+#install.packages("phytools")
+library("ctv")#自动安装任务视图相关的包
+library("ape")#自定义的系统进化树
+```
+
+
+&emsp;&emsp;系统发育树是研究物种进化历史必不可少的信息，可以利用它反映一些重要历史线索，如：
+
+
+&emsp;&emsp;1.生物多样性（物种形成或灭绝）；
+
+&emsp;&emsp;2.物种性状进化与多样化（Character evolution and diversification）；
+
+&emsp;&emsp;3.生物地理学（研究动植物的地理分布）；
+
+# 系统发育探究
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+tree = "(((((((cow, pig),whale),(bat,(lemur,human))),(robin,iguana)),coelacanth),gold_fish),shark);"#从字符中读取树文件
+vert.tree <- read.tree(text=tree)#读取树文件
+plot(vert.tree) #进行普通可视化
+```
+
+&emsp;&emsp;生物随着环境的变化而发生变化。演变发育具有一定的关联，如鲸鱼蜕变演化成了牛和猪，三者之间具备一定的亲疏性。为了更加形象分析，进行转换如下：
+
+
+```{r,echo=TRUE,message=FALSE,warning=FALSE}
+plot(vert.tree,type="cladogram") #改变聚类树的形状变成三角形
+plot(unroot(vert.tree),type="unrooted")
+plot(vert.tree,type="fan")#绘制谱系树
+tree<-read.tree(text="(((A,B),(C,D)),E);")
+plot(tree,type="cladogram",edge.width=2)
+plot(tree,edge.width=2,label.offset=0.1,type="cladogram")
+nodelabels()#可以多次调用，从而在枝上显示多种方法得到的节点支持率
+tiplabels()#可以设置tip周围的图标
+```
+
+&emsp;&emsp;从上看出鲨鱼和鱼相邻较近，挨着越近的生物，亲疏性较好。也可对其距离进行一定测量，如下所示：
+
+
+
+```{r}
+library(ape)
+trnwk <- "((((Homo:0.21,Pongo:0.21):0.28,Macaca:0.49):0.13,Ateles:0.62)"
+trnwk[2] <- ":0.38,Galago:1.00);"
+tr <- read.tree(text = trnwk)#读取树文件
+plot(tr)
+axisPhylo()#添加坐标轴
+```
+
+&emsp;&emsp;从上看出，猕猴，黑猩猩，人类，从猴的发育较为相近。
+
+# 本章汇总
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(knitr)          # 加载knitr包，使用kable函数,使得表格更加美观
+library(readxl)
+
+data=read_excel("C:\\Users\\Lenovo\\Desktop\\data_project\\参考包.xlsx")
+kable(head(data ,4))
+```
+
+# 参考资料
+
+[1]  https://www.jianshu.com/p/f601f943150d
+
+
+[2]  http://blog.sciencenet.cn/blog-508298-672028.html
+
+
+
+[3]  https://cloud.tencent.com/developer/article/1477031
